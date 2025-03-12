@@ -1,9 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from 'zod';
 import dotenv from 'dotenv';
 import { getWebpageMarkdown } from "./tools/getWebpageMarkdown.js";
-import { getWebsiteMap } from "./tools/getWebsiteMap.js";
+import { getWebsiteMap } from "./tools/getWebsiteURLs.js";
 import { getGoogleSearch } from "./tools/getGoogleSearch.js";
 
 dotenv.config(); // Load .env file (though API key will now be in claude_desktop_config.json)
@@ -65,10 +64,8 @@ server.tool(
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.log("Olostep Scraper MCP Server running on stdio");
 }
 
 main().catch(error => {
-    console.error("Fatal error starting server:", error);
     process.exit(1);
 });

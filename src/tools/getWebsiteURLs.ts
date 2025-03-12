@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Headers } from 'node-fetch';
 import fetch from 'node-fetch';
 
-export const OLOSTEP_MAP_API_URL = 'https://api.olostep.com/v1/maps';
+const OLOSTEP_MAP_API_URL = 'https://api.olostep.com/v1/maps';
 
 export interface OlostepMapApiResponse {
     urls_count: number;
@@ -10,8 +10,8 @@ export interface OlostepMapApiResponse {
 }
 
 export const getWebsiteMap = {
-    name: "get_website_map",
-    description: "Retrieve a list of URLs from a website sorted by a search query.",
+    name: "get_website_urls",
+    description: "Search and retrieve relevant URLs from a website",
     schema: {
         url: z.string().url().describe("The URL of the website to map."),
         search_query: z.string().describe("The search query to sort URLs by."),
@@ -65,7 +65,6 @@ export const getWebsiteMap = {
             }
 
         } catch (error: unknown) {
-            console.error("Error fetching website map:", error);
             return {
                 isError: true,
                 content: [{

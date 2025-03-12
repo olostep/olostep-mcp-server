@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Headers } from 'node-fetch';
 import fetch from 'node-fetch';
 
-export const OLOSTEP_SCRAPE_API_URL = 'https://api.olostep.com/v1/scrapes';
+const OLOSTEP_SCRAPE_API_URL = 'https://api.olostep.com/v1/scrapes';
 
 export interface OlostepScrapeApiResponse {
     result?: {
@@ -69,7 +69,6 @@ export const getWebpageMarkdown = {
             }
 
         } catch (error: unknown) {
-            console.error("Error scraping webpage:", error);
             return {
                 isError: true,
                 content: [{

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Headers } from 'node-fetch';
 import fetch from 'node-fetch';
 
-export const OLOSTEP_SCRAPE_API_URL = 'https://api.olostep.com/v1/scrapes';
+const OLOSTEP_SCRAPE_API_URL = 'https://api.olostep.com/v1/scrapes';
 
 interface GoogleSearchResponse {
     result?: {
@@ -73,7 +73,6 @@ export const getGoogleSearch = {
             }
 
         } catch (error: unknown) {
-            console.error("Error performing Google search:", error);
             return {
                 isError: true,
                 content: [{
