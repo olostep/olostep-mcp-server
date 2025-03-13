@@ -1,10 +1,10 @@
 {
   "name": "olostep-mcp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Olostep MCOP server for web scraping, google search and website urls search.",
   "type": "module",
   "bin": {
-    "olostep": "./build/index.js"
+    "olostep-mcp": "./build/index.js"
   },
   "scripts": {
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\""
