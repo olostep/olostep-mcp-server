@@ -1,6 +1,7 @@
 {
   "name": "olostep-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
+  "description": "Olostep MCOP server for web scraping, google search and website urls search.",
   "type": "module",
   "bin": {
     "olostep": "./build/index.js"
@@ -11,10 +12,7 @@
   "files": [
     "build"
   ],
-  "keywords": [],
-  "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.1",
     "dotenv": "^16.4.7",
@@ -24,5 +22,24 @@
   "devDependencies": {
     "@types/node": "^22.13.10",
     "typescript": "^5.8.2"
-  }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "olostep",
+    "web-scraping",
+    "google-search",
+    "markdown-extraction"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/olostep/olostep-mcp-server.git"
+  },
+  "author": "olostep",
+  "bugs": {
+    "url": "https://github.com/olostep/olostep-mcp-server/issues"
+  },
+  "homepage": "https://github.com/olostep/olostep-mcp-server#readme"
 }

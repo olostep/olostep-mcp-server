@@ -1,5 +1,9 @@
 # Olostep MCP Server
 
+<a href="https://glama.ai/mcp/servers/ur5ulf3b8e">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/ur5ulf3b8e/badge" />
+</a>
+
 A powerful MCP (Machine Control Protocol) server that provides web scraping and content extraction capabilities for AI assistants.
 
 ## Installation
