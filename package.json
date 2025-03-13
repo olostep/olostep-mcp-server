@@ -1,6 +1,6 @@
 {
   "name": "olostep-mcp",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Olostep MCOP server for web scraping, google search and website urls search.",
   "type": "module",
   "bin": {
