@@ -1,5 +1,7 @@
 # Olostep MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@olostep/olostep-mcp-server)](https://smithery.ai/server/@olostep/olostep-mcp-server)
+
 A Model Context Protocol (MCP) server implementation that integrates with [Olostep](https://olostep.com) for web scraping, content extraction, and search capabilities.
 
 ## Features
@@ -13,6 +15,14 @@ A Model Context Protocol (MCP) server implementation that integrates with [Olost
 - Simple API key configuration
 
 ## Installation
+
+### Installing via Smithery
+
+To install Olostep MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@olostep/olostep-mcp-server):
+
+```bash
+npx -y @smithery/cli install @olostep/olostep-mcp-server --client claude
+```
 
 ### Running with npx
 
@@ -204,4 +214,3 @@ Example error response:
 ## License
 
 ISC License
-
