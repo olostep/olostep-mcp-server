@@ -1,6 +1,8 @@
 # Olostep MCP Server
 
 A Model Context Protocol (MCP) server implementation that integrates with [Olostep](https://olostep.com) for web scraping, content extraction, and search capabilities.
+To set up Olostep MCP Server, you need to have an API key. You can get the API key by signing up on the [Olostep website](https://olostep.com/auth).
+
 
 ## Features
 
@@ -42,6 +44,12 @@ Add this to your `claude_desktop_config.json`:
     }
   }
 }
+```
+
+Or for a more straightforward way you can install via the Smithery CLI by running the following code in your device terminal
+
+```
+npx -y @smithery/cli install @olostep/olostep-mcp-server --client claude
 ```
 
 ### Running on Windsurf
