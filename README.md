@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/olostep-olostep-mcp-server-badge.png)](https://mseep.ai/app/olostep-olostep-mcp-server)
+
 # Olostep MCP Server
 
 A Model Context Protocol (MCP) server implementation that integrates with [Olostep](https://olostep.com) for web scraping, content extraction, and search capabilities.
