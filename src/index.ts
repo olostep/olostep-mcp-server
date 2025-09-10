@@ -10,6 +10,7 @@ import { getGoogleSearch } from "./tools/getGoogleSearch.js";
 dotenv.config(); // Load .env file (though API key will now be in claude_desktop_config.json)
 
 const OLOSTEP_API_KEY = process.env.OLOSTEP_API_KEY; // Get API key from environment variables
+const ORBIT_KEY = process.env.ORBIT_KEY; // Get Orbit key from environment variables
 
 if (!OLOSTEP_API_KEY) {
     console.error("Error: OLOSTEP_API_KEY environment variable is not set. Please configure it in your claude_desktop_config.json file.");
@@ -27,7 +28,7 @@ server.tool(
     getWebpageMarkdown.description,
     getWebpageMarkdown.schema,
     async (params) => {
-        const result = await getWebpageMarkdown.handler(params, OLOSTEP_API_KEY);
+        const result = await getWebpageMarkdown.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
         return {
             ...result,
             content: result.content.map(item => ({ ...item, type: item.type as "text" }))

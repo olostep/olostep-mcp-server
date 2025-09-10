@@ -18,7 +18,7 @@ export const getWebpageMarkdown = {
         wait_before_scraping: z.number().int().min(0).default(0).describe("Time to wait in milliseconds before starting the scrape."),
         country: z.string().optional().describe("Residential country to load the request from (e.g., US, CA, GB). Optional."),
     },
-    handler: async ({ url_to_scrape, wait_before_scraping, country }: { url_to_scrape: string; wait_before_scraping: number; country?: string }, apiKey: string) => {
+    handler: async ({ url_to_scrape, wait_before_scraping, country }: { url_to_scrape: string; wait_before_scraping: number; country?: string }, apiKey: string, orbitKey?: string) => {
         try {
             const headers = new Headers({
                 'Content-Type': 'application/json',
@@ -29,7 +29,8 @@ export const getWebpageMarkdown = {
                 url_to_scrape: url_to_scrape,
                 wait_before_scraping: wait_before_scraping,
                 formats: ["markdown"],
-                ...(country && { country: country })
+                ...(country && { country: country }),
+                ...(orbitKey && { force_connection_id: orbitKey })
             };
 
             const response = await fetch(OLOSTEP_SCRAPE_API_URL, {
