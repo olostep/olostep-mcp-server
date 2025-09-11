@@ -56,7 +56,7 @@ server.tool(
     getGoogleSearch.description,
     getGoogleSearch.schema,
     async (params) => {
-        const result = await getGoogleSearch.handler(params, OLOSTEP_API_KEY);
+        const result = await getGoogleSearch.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
         return {
             ...result,
             content: result.content.map(item => ({ ...item, type: item.type as "text" }))

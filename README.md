@@ -89,6 +89,7 @@ Replace `your-api-key` with your Olostep API key.
 ### Environment Variables
 
 - `OLOSTEP_API_KEY`: Your Olostep API key (required)
+- `ORBIT_KEY`: An optional key for using Orbit to route requests.
 
 ## Available Tools
 
@@ -212,4 +213,3 @@ Example error response:
 ## License
 
 ISC License
-

@@ -17,7 +17,7 @@ export const getGoogleSearch = {
         query: z.string().describe("The search query to perform"),
         country: z.string().optional().default("US").describe("Country code for localized results (e.g., US, GB)")
     },
-    handler: async ({ query, country }: { query: string; country?: string }, apiKey: string) => {
+    handler: async ({ query, country }: { query: string; country?: string }, apiKey: string, orbitKey?: string) => {
         try {
             const headers = new Headers({
                 'Content-Type': 'application/json',
@@ -32,7 +32,8 @@ export const getGoogleSearch = {
                 formats: ["parser_extract"],
                 parser_extract: { parser_id: "@olostep/google-search" },
                 url_to_scrape: searchUrl.toString(),
-                wait_before_scraping: 0
+                wait_before_scraping: 0,
+                ...(orbitKey && { force_connection_id: orbitKey })
             };
 
             const response = await fetch(OLOSTEP_SCRAPE_API_URL, {
