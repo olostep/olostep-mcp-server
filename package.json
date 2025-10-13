@@ -1,13 +1,15 @@
 {
   "name": "olostep-mcp",
-  "version": "1.0.5",
-  "description": "Olostep MCOP server for web scraping, google search and website urls search.",
+  "version": "1.0.6",
+  "description": "Olostep MCP server for web scraping, google search and website urls search.",
   "type": "module",
+  "mcpName": "io.github.olostep/olostep-mcp-server",
   "bin": {
     "olostep-mcp": "./build/index.js"
   },
   "scripts": {
-    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\""
+    "build": "tsc && node -e \"require('fs').chmodSync('build/js/index.js', '755')\"",
+    "validate-server-json": "node scripts/validate-schema.mjs"
   },
   "files": [
     "build"
@@ -15,13 +17,16 @@
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.1",
+    "ajv-formats": "^3.0.1",
     "dotenv": "^16.4.7",
     "node-fetch": "^3.3.2",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "ajv-cli": "^5.0.0",
+    "ajv": "^8.12.0"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.olostep/olostep-mcp-server",
+  "title": "Olostep MCP Server",
+  "description": "Olostep MCOP server for web scraping, google search and website urls search.",
+  "version": "1.0.6",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "olostep-mcp",
+      "version": "1.0.6",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
