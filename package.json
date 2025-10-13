@@ -1,6 +1,6 @@
 {
   "name": "olostep-mcp",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Olostep MCP server for web scraping, google search and website urls search.",
   "type": "module",
   "mcpName": "io.github.olostep/olostep-mcp-server",
