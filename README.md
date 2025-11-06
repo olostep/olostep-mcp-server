@@ -3,6 +3,9 @@
 A Model Context Protocol (MCP) server implementation that integrates with [Olostep](https://olostep.com) for web scraping, content extraction, and search capabilities.
 To set up Olostep MCP Server, you need to have an API key. You can get the API key by signing up on the [Olostep website](https://olostep.com/auth).
 
+<a href="https://glama.ai/mcp/servers/@olostep/olostep-mcp-server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@olostep/olostep-mcp-server/badge" alt="olostep-mcp MCP server" />
+</a>
 
 ## Features
 
