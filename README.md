@@ -22,6 +22,18 @@ To set up Olostep MCP Server, you need to have an API key. You can get the API k
 env OLOSTEP_API_KEY=your-api-key npx -y olostep-mcp
 ```
 
+On Windows (PowerShell):
+
+```powershell
+$env:OLOSTEP_API_KEY = \"your-api-key\"; npx -y olostep-mcp
+```
+
+On Windows (CMD):
+
+```cmd
+set OLOSTEP_API_KEY=your-api-key && npx -y olostep-mcp
+```
+
 ### Manual Installation
 
 ```bash
@@ -83,6 +95,33 @@ To configure Olostep MCP in Cursor:
    - Command: `env OLOSTEP_API_KEY=your-api-key npx -y olostep-mcp`
 
 Replace `your-api-key` with your Olostep API key.
+
+### Running on Metorial
+
+**Option 1: One-Click Installation (Recommended)**
+
+1. Open [Metorial](https://metorial.com) dashboard
+2. Navigate to MCP Servers directory
+3. Search for "Olostep"
+4. Click "Install" and enter your API key
+
+**Option 2: Manual Configuration**
+
+Add this to your Metorial MCP server configuration:
+
+```json
+{
+  "olostep": {
+    "command": "npx",
+    "args": ["-y", "olostep-mcp"],
+    "env": {
+      "OLOSTEP_API_KEY": "YOUR_API_KEY_HERE"
+    }
+  }
+}
+```
+
+The Olostep tools will then be available in your Metorial AI chats.
 
 ## Configuration
 
