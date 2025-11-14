@@ -6,6 +6,12 @@ import dotenv from 'dotenv';
 import { getWebpageMarkdown } from "./tools/getWebpageMarkdown.js";
 import { getWebsiteMap } from "./tools/getWebsiteURLs.js";
 import { getGoogleSearch } from "./tools/getGoogleSearch.js";
+import { scrapeWebsite } from "./tools/scrapeWebsite.js";
+import { searchWeb } from "./tools/searchWeb.js";
+import { answers } from "./tools/answers.js";
+import { batchScrapeUrls } from "./tools/batchScrapeUrls.js";
+import { createCrawl } from "./tools/createCrawl.js";
+import { createMap } from "./tools/createMap.js";
 
 dotenv.config(); // Load .env file (though API key will now be in claude_desktop_config.json)
 
@@ -21,6 +27,90 @@ const server = new McpServer({
     name: "olostep",
     version: "1.0.0",
 });
+
+// Register Create Map tool
+server.tool(
+    createMap.name,
+    createMap.description,
+    createMap.schema,
+    async (params) => {
+        const result = await createMap.handler(params, OLOSTEP_API_KEY);
+        return {
+            ...result,
+            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
+        };
+    }
+);
+
+// Register Create Crawl tool
+server.tool(
+    createCrawl.name,
+    createCrawl.description,
+    createCrawl.schema,
+    async (params) => {
+        const result = await createCrawl.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
+        return {
+            ...result,
+            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
+        };
+    }
+);
+
+// Register Batch Scrape URLs tool
+server.tool(
+    batchScrapeUrls.name,
+    batchScrapeUrls.description,
+    batchScrapeUrls.schema,
+    async (params) => {
+        const result = await batchScrapeUrls.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
+        return {
+            ...result,
+            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
+        };
+    }
+);
+
+// Register Answers (AI) tool
+server.tool(
+    answers.name,
+    answers.description,
+    answers.schema,
+    async (params) => {
+        const result = await answers.handler(params, OLOSTEP_API_KEY);
+        return {
+            ...result,
+            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
+        };
+    }
+);
+
+// Register Search (parser-based) tool
+server.tool(
+    searchWeb.name,
+    searchWeb.description,
+    searchWeb.schema,
+    async (params) => {
+        const result = await searchWeb.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
+        return {
+            ...result,
+            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
+        };
+    }
+);
+
+// Register Scrape Website tool
+server.tool(
+    scrapeWebsite.name,
+    scrapeWebsite.description,
+    scrapeWebsite.schema,
+    async (params) => {
+        const result = await scrapeWebsite.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
+        return {
+            ...result,
+            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
+        };
+    }
+);
 
 // Register the webpage markdown tool
 server.tool(

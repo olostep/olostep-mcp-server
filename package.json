@@ -8,12 +8,13 @@
     "olostep-mcp": "./build/index.js"
   },
   "scripts": {
-    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "build": "tsc && node -e \"const fs=require('fs');const p='build/index.js';let s=fs.readFileSync(p,'utf8');if(!s.startsWith('#!/usr/bin/env node')){fs.writeFileSync(p,'#!/usr/bin/env node\\n'+s);}fs.chmodSync(p,0o755);\"",
     "prepack": "npm run build",
+    "prepublishOnly": "npm run build",
     "validate-server-json": "node scripts/validate-schema.mjs"
   },
   "files": [
-    "build"
+    "build/**/*"
   ],
   "license": "ISC",
   "dependencies": {
