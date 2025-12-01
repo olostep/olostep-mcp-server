@@ -1,7 +1,7 @@
 {
   "name": "olostep-mcp",
   "version": "1.0.8",
-  "description": "Olostep MCP server for web scraping, google search and website urls search.",
+  "description": "Olostep MCP Server to search, extract and structure web data. Features web scraping, AI-powered answers with citations, batch processing (10k URLs), and autonomous site crawling for AI agents and LLMs.",
   "type": "module",
   "mcpName": "io.github.olostep/olostep-mcp-server",
   "bin": {
@@ -35,10 +35,22 @@
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "olostep",
     "web-scraping",
-    "google-search",
-    "markdown-extraction"
+    "web-search",
+    "google-search"
+    "search-api",
+    "markdown-extraction",
+    "ai-agent",
+    "llm-tools",
+    "web-crawler",
+    "batch-scraping",
+    "ai-answers",
+    "content-extraction",
+    "data-extraction",
+    "anthropic",
+    "claude"
   ],
   "repository": {
     "type": "git",

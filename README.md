@@ -352,9 +352,9 @@ Search and retrieve relevant URLs from a website, sorted by relevance to your qu
 }
 ```
 
-### 9. Google Search (`google_search`)
+### 9. Web Search (`google_search`)
 
-Retrieve structured data from Google search results.
+Retrieve structured data from web search results.
 
 ```json
 {

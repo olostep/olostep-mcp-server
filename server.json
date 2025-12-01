@@ -2,13 +2,14 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
   "name": "io.github.olostep/olostep-mcp-server",
   "title": "Olostep MCP Server",
-  "description": "Olostep MCP server for web scraping, google search and website urls search.",
-  "version": "1.0.7",
+  "description": "API to search, extract and structure web data. Features web scraping, AI-powered answers with citations, batch processing (10k URLs), and autonomous site crawling for AI agents and LLMs.",
+  "version": "1.0.8",
+  "icon": "assets/logo.png",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "olostep-mcp",
-      "version": "1.0.7",
+      "version": "1.0.8",
       "transport": {
         "type": "stdio"
       }
