@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Source files (we only need build output)
+src/
+
+# Development files
+*.md
+!README.md
+.git/
+.gitignore
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Test files
+*.test.js
+*.test.ts
+__tests__/
+coverage/
+
+# TypeScript source maps (optional, remove if you want debugging)
+# *.map
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db
+
+# Scripts
+scripts/
+
+# Assets (not needed for runtime)
+assets/
+
+

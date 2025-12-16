@@ -1,5 +1,9 @@
 # Olostep MCP Server
 
+[![Docker Hub](https://img.shields.io/docker/v/olostep/mcp-server?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/olostep/mcp-server)
+[![npm version](https://img.shields.io/npm/v/olostep-mcp.svg)](https://www.npmjs.com/package/olostep-mcp)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+
 A Model Context Protocol (MCP) server implementation that integrates with [Olostep](https://olostep.com) for web scraping, content extraction, and search capabilities.
 To set up Olostep MCP Server, you need to have an API key. You can get the API key by signing up on the [Olostep website](https://olostep.com/auth).
 
@@ -18,6 +22,70 @@ To set up Olostep MCP Server, you need to have an API key. You can get the API k
 - Simple API key configuration
 
 ## Installation
+
+### 🐳 Running with Docker (Recommended)
+
+The easiest way to run the Olostep MCP server:
+
+```bash
+docker pull olostep/mcp-server
+
+docker run -i --rm \
+  -e OLOSTEP_API_KEY="your-api-key" \
+  olostep/mcp-server
+```
+
+#### Local-only Docker build (no Docker Hub required)
+
+If the Docker Hub image isn’t available from your environment, you can build and run the image locally from this repository:
+
+```bash
+cd olostep-mcp-server
+npm install
+npm run build
+docker build -t olostep/mcp-server:local .
+
+docker run -i --rm -e OLOSTEP_API_KEY="your-api-key" olostep/mcp-server:local
+```
+
+#### Local smoke test (initialize + tools/list)
+
+This MCP server uses **stdio** transport. You can validate it starts and lists tools without needing a working API key:
+
+On Windows (PowerShell):
+
+```powershell
+cd .\olostep-mcp-server
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke-test.ps1
+```
+
+To actually call tools successfully, provide `OLOSTEP_API_KEY` when running the container.
+
+#### Using Docker with Claude Desktop
+
+Add this to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "olostep": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "OLOSTEP_API_KEY=YOUR_API_KEY_HERE",
+        "olostep/mcp-server"
+      ]
+    }
+  }
+}
+```
+
+#### Using Docker with Cursor
+
+Add an MCP server with:
+- **Name:** `olostep`
+- **Type:** `command`
+- **Command:** `docker run -i --rm -e OLOSTEP_API_KEY=your-api-key olostep/mcp-server`
 
 ### Running with npx
 
@@ -402,6 +470,47 @@ Example error response:
 }
 ```
 
+
+## Distribution
+
+### Docker Images
+
+The MCP server is available as a Docker image:
+
+- **Docker Hub:** [`olostep/mcp-server`](https://hub.docker.com/r/olostep/mcp-server)
+- **Official Docker MCP Registry:** `mcp/olostep` (coming soon - enhanced security with signatures & SBOMs)
+- **GitHub Container Registry:** `ghcr.io/olostep/olostep-mcp-server`
+
+### Docker Desktop MCP Toolkit
+
+The Olostep MCP Server is being added to Docker Desktop's official MCP Toolkit, which means users will be able to:
+- Discover it in Docker Desktop's MCP Toolkit UI
+- Install it with one click
+- Configure it visually
+- Use it with any MCP-compatible client (Claude Desktop, Cursor, etc.)
+
+**Status**: Submission in progress to [Docker MCP Registry](https://github.com/docker/mcp-registry)
+
+### Supported Platforms
+
+- `linux/amd64`
+- `linux/arm64`
+
+### Building Locally
+
+```bash
+# Clone the repository
+git clone https://github.com/olostep/olostep-mcp-server.git
+cd olostep-mcp-server
+
+# Build the image
+npm install
+npm run build
+docker build -t olostep/mcp-server .
+
+# Run locally
+docker run -i --rm -e OLOSTEP_API_KEY="your-key" olostep/mcp-server
+```
 
 ## License
 

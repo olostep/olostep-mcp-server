@@ -5,7 +5,6 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import dotenv from 'dotenv';
 import { getWebpageMarkdown } from "./tools/getWebpageMarkdown.js";
 import { getWebsiteMap } from "./tools/getWebsiteURLs.js";
-import { getGoogleSearch } from "./tools/getGoogleSearch.js";
 import { scrapeWebsite } from "./tools/scrapeWebsite.js";
 import { searchWeb } from "./tools/searchWeb.js";
 import { answers } from "./tools/answers.js";
@@ -18,9 +17,21 @@ dotenv.config(); // Load .env file (though API key will now be in claude_desktop
 const OLOSTEP_API_KEY = process.env.OLOSTEP_API_KEY; // Get API key from environment variables
 const ORBIT_KEY = process.env.ORBIT_KEY; // Get Orbit key from environment variables
 
+const missingApiKeyError = {
+    isError: true,
+    content: [
+        {
+            type: "text" as const,
+            text: "OLOSTEP_API_KEY environment variable is not set. Set it and restart the server to use Olostep tools.",
+        },
+    ],
+};
+
 if (!OLOSTEP_API_KEY) {
-    console.error("Error: OLOSTEP_API_KEY environment variable is not set. Please configure it in your claude_desktop_config.json file.");
-    process.exit(1); // Exit if API key is not configured
+    // Don't hard-exit: allow initialize/tools/list so Docker-based setups can be smoke-tested.
+    console.error(
+        "Warning: OLOSTEP_API_KEY is not set. The server will start, but tool calls will fail until you provide the key."
+    );
 }
 
 const server = new McpServer({
@@ -34,6 +45,7 @@ server.tool(
     createMap.description,
     createMap.schema,
     async (params) => {
+        if (!OLOSTEP_API_KEY) return missingApiKeyError;
         const result = await createMap.handler(params, OLOSTEP_API_KEY);
         return {
             ...result,
@@ -48,6 +60,7 @@ server.tool(
     createCrawl.description,
     createCrawl.schema,
     async (params) => {
+        if (!OLOSTEP_API_KEY) return missingApiKeyError;
         const result = await createCrawl.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
         return {
             ...result,
@@ -62,6 +75,7 @@ server.tool(
     batchScrapeUrls.description,
     batchScrapeUrls.schema,
     async (params) => {
+        if (!OLOSTEP_API_KEY) return missingApiKeyError;
         const result = await batchScrapeUrls.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
         return {
             ...result,
@@ -76,6 +90,7 @@ server.tool(
     answers.description,
     answers.schema,
     async (params) => {
+        if (!OLOSTEP_API_KEY) return missingApiKeyError;
         const result = await answers.handler(params, OLOSTEP_API_KEY);
         return {
             ...result,
@@ -90,6 +105,7 @@ server.tool(
     searchWeb.description,
     searchWeb.schema,
     async (params) => {
+        if (!OLOSTEP_API_KEY) return missingApiKeyError;
         const result = await searchWeb.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
         return {
             ...result,
@@ -104,6 +120,7 @@ server.tool(
     scrapeWebsite.description,
     scrapeWebsite.schema,
     async (params) => {
+        if (!OLOSTEP_API_KEY) return missingApiKeyError;
         const result = await scrapeWebsite.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
         return {
             ...result,
@@ -118,6 +135,7 @@ server.tool(
     getWebpageMarkdown.description,
     getWebpageMarkdown.schema,
     async (params) => {
+        if (!OLOSTEP_API_KEY) return missingApiKeyError;
         const result = await getWebpageMarkdown.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
         return {
             ...result,
@@ -132,6 +150,7 @@ server.tool(
     getWebsiteMap.description,
     getWebsiteMap.schema,
     async (params) => {
+        if (!OLOSTEP_API_KEY) return missingApiKeyError;
         const result = await getWebsiteMap.handler(params, OLOSTEP_API_KEY);
         return {
             ...result,
@@ -140,19 +159,7 @@ server.tool(
     }
 );
 
-// Register the Google search tool
-server.tool(
-    getGoogleSearch.name,
-    getGoogleSearch.description,
-    getGoogleSearch.schema,
-    async (params) => {
-        const result = await getGoogleSearch.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
-        return {
-            ...result,
-            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
-        };
-    }
-);
+
 
 async function main() {
     const transport = new StdioServerTransport();
