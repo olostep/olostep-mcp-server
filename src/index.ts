@@ -7,6 +7,7 @@ import { getWebpageMarkdown } from "./tools/getWebpageMarkdown.js";
 import { getWebsiteMap } from "./tools/getWebsiteURLs.js";
 import { scrapeWebsite } from "./tools/scrapeWebsite.js";
 import { searchWeb } from "./tools/searchWeb.js";
+import { getGoogleSearch } from "./tools/getGoogleSearch.js";
 import { answers } from "./tools/answers.js";
 import { batchScrapeUrls } from "./tools/batchScrapeUrls.js";
 import { createCrawl } from "./tools/createCrawl.js";
@@ -152,6 +153,21 @@ server.tool(
     async (params) => {
         if (!OLOSTEP_API_KEY) return missingApiKeyError;
         const result = await getWebsiteMap.handler(params, OLOSTEP_API_KEY);
+        return {
+            ...result,
+            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
+        };
+    }
+);
+
+// Register the Google search tool
+server.tool(
+    getGoogleSearch.name,
+    getGoogleSearch.description,
+    getGoogleSearch.schema,
+    async (params) => {
+        if (!OLOSTEP_API_KEY) return missingApiKeyError;
+        const result = await getGoogleSearch.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
         return {
             ...result,
             content: result.content.map(item => ({ ...item, type: item.type as "text" }))
