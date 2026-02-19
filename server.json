@@ -3,13 +3,13 @@
   "name": "io.github.olostep/olostep-mcp-server",
   "title": "Olostep MCP Server",
   "description": "API to search, extract and structure web data. Features web scraping, AI-powered answers with citations, batch processing (10k URLs), and autonomous site crawling for AI agents and LLMs.",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "icon": "assets/logo.png",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "olostep-mcp",
-      "version": "1.0.9",
+      "version": "1.0.10",
       "transport": {
         "type": "stdio"
       }
