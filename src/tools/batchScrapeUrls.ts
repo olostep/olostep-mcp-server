@@ -77,7 +77,7 @@ export const batchScrapeUrls = {
 
 			const formats: string[] = [output_format];
 			const payload: Record<string, unknown> = {
-				urls: urls_to_scrape,
+				batch_array: urls_to_scrape,
 				formats,
 				wait_before_scraping: wait_before_scraping ?? 0,
 			};
