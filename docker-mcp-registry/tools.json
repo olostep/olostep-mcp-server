@@ -98,7 +98,36 @@
       {
         "name": "parser",
         "type": "string",
-        "desc": "Optional parser ID for specialized extraction",
+        "desc": "Optional parser ID for specialized extraction (e.g. @olostep/google-search)",
+        "optional": true
+      },
+      {
+        "name": "wait_for_completion_seconds",
+        "type": "number",
+        "desc": "Seconds to wait for batch completion (polls every 10s). Use 0 to return immediately with batch_id, then call get_batch_results later. Recommended: 60 for small batches.",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "name": "get_batch_results",
+    "description": "Retrieve the status and scraped content for a batch job. If completed, fetches items and retrieves content for each URL.",
+    "arguments": [
+      {
+        "name": "batch_id",
+        "type": "string",
+        "desc": "The batch_id returned from batch_scrape_urls"
+      },
+      {
+        "name": "formats",
+        "type": "array",
+        "desc": "Content formats to retrieve per URL (e.g. [\"markdown\"]). Default: [\"markdown\"]",
+        "optional": true
+      },
+      {
+        "name": "items_limit",
+        "type": "number",
+        "desc": "Max number of items to retrieve content for (1-100). Default: 20",
         "optional": true
       }
     ]

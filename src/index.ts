@@ -10,6 +10,7 @@ import { searchWeb } from "./tools/searchWeb.js";
 import { getGoogleSearch } from "./tools/getGoogleSearch.js";
 import { answers } from "./tools/answers.js";
 import { batchScrapeUrls } from "./tools/batchScrapeUrls.js";
+import { getBatchResults } from "./tools/getBatchResults.js";
 import { createCrawl } from "./tools/createCrawl.js";
 import { createMap } from "./tools/createMap.js";
 
@@ -78,6 +79,21 @@ server.tool(
     async (params) => {
         if (!OLOSTEP_API_KEY) return missingApiKeyError;
         const result = await batchScrapeUrls.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
+        return {
+            ...result,
+            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
+        };
+    }
+);
+
+// Register Get Batch Results tool
+server.tool(
+    getBatchResults.name,
+    getBatchResults.description,
+    getBatchResults.schema,
+    async (params) => {
+        if (!OLOSTEP_API_KEY) return missingApiKeyError;
+        const result = await getBatchResults.handler(params, OLOSTEP_API_KEY);
         return {
             ...result,
             content: result.content.map(item => ({ ...item, type: item.type as "text" }))
