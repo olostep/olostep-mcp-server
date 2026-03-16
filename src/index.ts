@@ -2,7 +2,9 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import dotenv from 'dotenv';
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import express from "express";
+import dotenv from "dotenv";
 import { getWebpageMarkdown } from "./tools/getWebpageMarkdown.js";
 import { getWebsiteMap } from "./tools/getWebsiteURLs.js";
 import { scrapeWebsite } from "./tools/scrapeWebsite.js";
@@ -14,190 +16,116 @@ import { getBatchResults } from "./tools/getBatchResults.js";
 import { createCrawl } from "./tools/createCrawl.js";
 import { createMap } from "./tools/createMap.js";
 
-dotenv.config(); // Load .env file (though API key will now be in claude_desktop_config.json)
+dotenv.config();
 
-const OLOSTEP_API_KEY = process.env.OLOSTEP_API_KEY; // Get API key from environment variables
-const ORBIT_KEY = process.env.ORBIT_KEY; // Get Orbit key from environment variables
+type ToolResult = { isError?: boolean; content: { type: "text"; text: string }[] };
 
-const missingApiKeyError = {
-    isError: true,
-    content: [
-        {
-            type: "text" as const,
-            text: "OLOSTEP_API_KEY environment variable is not set. Set it and restart the server to use Olostep tools.",
-        },
-    ],
-};
-
-if (!OLOSTEP_API_KEY) {
-    // Don't hard-exit: allow initialize/tools/list so Docker-based setups can be smoke-tested.
-    console.error(
-        "Warning: OLOSTEP_API_KEY is not set. The server will start, but tool calls will fail until you provide the key."
-    );
+function wrap(result: { isError?: boolean; content: { type: string; text: string }[] }): ToolResult {
+    return {
+        isError: result.isError,
+        content: result.content.map(item => ({ type: "text" as const, text: item.text })),
+    };
 }
 
-const server = new McpServer({
-    name: "olostep",
-    version: "1.0.0",
-});
-
-// Register Create Map tool
-server.tool(
-    createMap.name,
-    createMap.description,
-    createMap.schema,
-    async (params) => {
-        if (!OLOSTEP_API_KEY) return missingApiKeyError;
-        const result = await createMap.handler(params, OLOSTEP_API_KEY);
-        return {
-            ...result,
-            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
-        };
-    }
-);
-
-// Register Create Crawl tool
-server.tool(
-    createCrawl.name,
-    createCrawl.description,
-    createCrawl.schema,
-    async (params) => {
-        if (!OLOSTEP_API_KEY) return missingApiKeyError;
-        const result = await createCrawl.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
-        return {
-            ...result,
-            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
-        };
-    }
-);
-
-// Register Batch Scrape URLs tool
-server.tool(
-    batchScrapeUrls.name,
-    batchScrapeUrls.description,
-    batchScrapeUrls.schema,
-    async (params) => {
-        if (!OLOSTEP_API_KEY) return missingApiKeyError;
-        const result = await batchScrapeUrls.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
-        return {
-            ...result,
-            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
-        };
-    }
-);
-
-// Register Get Batch Results tool
-server.tool(
-    getBatchResults.name,
-    getBatchResults.description,
-    getBatchResults.schema,
-    async (params) => {
-        if (!OLOSTEP_API_KEY) return missingApiKeyError;
-        const result = await getBatchResults.handler(params, OLOSTEP_API_KEY);
-        return {
-            ...result,
-            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
-        };
-    }
-);
-
-// Register Answers (AI) tool
-server.tool(
-    answers.name,
-    answers.description,
-    answers.schema,
-    async (params) => {
-        if (!OLOSTEP_API_KEY) return missingApiKeyError;
-        const result = await answers.handler(params, OLOSTEP_API_KEY);
-        return {
-            ...result,
-            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
-        };
-    }
-);
-
-// Register Search (parser-based) tool
-server.tool(
-    searchWeb.name,
-    searchWeb.description,
-    searchWeb.schema,
-    async (params) => {
-        if (!OLOSTEP_API_KEY) return missingApiKeyError;
-        const result = await searchWeb.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
-        return {
-            ...result,
-            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
-        };
-    }
-);
-
-// Register Scrape Website tool
-server.tool(
-    scrapeWebsite.name,
-    scrapeWebsite.description,
-    scrapeWebsite.schema,
-    async (params) => {
-        if (!OLOSTEP_API_KEY) return missingApiKeyError;
-        const result = await scrapeWebsite.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
-        return {
-            ...result,
-            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
-        };
-    }
-);
-
-// Register the webpage markdown tool
-server.tool(
-    getWebpageMarkdown.name,
-    getWebpageMarkdown.description,
-    getWebpageMarkdown.schema,
-    async (params) => {
-        if (!OLOSTEP_API_KEY) return missingApiKeyError;
-        const result = await getWebpageMarkdown.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
-        return {
-            ...result,
-            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
-        };
-    }
-);
-
-// Register the website map tool
-server.tool(
-    getWebsiteMap.name,
-    getWebsiteMap.description,
-    getWebsiteMap.schema,
-    async (params) => {
-        if (!OLOSTEP_API_KEY) return missingApiKeyError;
-        const result = await getWebsiteMap.handler(params, OLOSTEP_API_KEY);
-        return {
-            ...result,
-            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
-        };
-    }
-);
-
-// Register the Google search tool
-server.tool(
-    getGoogleSearch.name,
-    getGoogleSearch.description,
-    getGoogleSearch.schema,
-    async (params) => {
-        if (!OLOSTEP_API_KEY) return missingApiKeyError;
-        const result = await getGoogleSearch.handler(params, OLOSTEP_API_KEY, ORBIT_KEY);
-        return {
-            ...result,
-            content: result.content.map(item => ({ ...item, type: item.type as "text" }))
-        };
-    }
-);
-
-
-
-async function main() {
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
+function log(level: string, message: string, extra: Record<string, unknown> = {}) {
+    const entry = {
+        timestamp: new Date().toISOString(),
+        level,
+        message,
+        ...extra,
+    };
+    process.stdout.write(JSON.stringify(entry) + "\n");
 }
 
-main().catch(error => {
-    process.exit(1);
-});
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyTool = { name: string; description: string; schema: any; handler: (...args: any[]) => Promise<any> };
+
+const tools: AnyTool[] = [
+    createMap, createCrawl, batchScrapeUrls, getBatchResults,
+    answers, searchWeb, scrapeWebsite, getWebpageMarkdown,
+    getWebsiteMap, getGoogleSearch,
+];
+
+function createMcpServer(apiKey: string, orbitKey?: string) {
+    const server = new McpServer({ name: "olostep", version: "1.0.0" });
+
+    for (const tool of tools) {
+        server.registerTool(
+            tool.name,
+            { description: tool.description, inputSchema: tool.schema },
+            async (params: Record<string, unknown>) => wrap(await tool.handler(params, apiKey, orbitKey))
+        );
+    }
+
+    return server;
+}
+
+async function startStdio() {
+    const apiKey = process.env.OLOSTEP_API_KEY;
+    if (!apiKey) {
+        log("warn", "OLOSTEP_API_KEY is not set — tool calls will fail until you provide the key");
+    }
+    const server = createMcpServer(apiKey ?? "", process.env.ORBIT_KEY);
+    await server.connect(new StdioServerTransport());
+    log("info", "MCP server started in STDIO mode");
+}
+
+async function startHttp() {
+    const port = parseInt(process.env.PORT ?? "3000", 10);
+    const app = express();
+    app.use(express.json());
+
+    app.get("/health", (_req, res) => {
+        res.json({ status: "ok" });
+    });
+
+    app.post("/mcp", async (req, res) => {
+        const start = Date.now();
+        const auth = req.headers.authorization;
+        const apiKey = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
+
+        if (!apiKey) {
+            log("warn", "Rejected request — missing API key", { status: 401 });
+            res.status(401).json({ error: "Missing Authorization: Bearer <OLOSTEP_API_KEY>" });
+            return;
+        }
+
+        const orbitKey = req.headers["x-orbit-key"] as string | undefined;
+
+        try {
+            const server = createMcpServer(apiKey, orbitKey);
+            const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+
+            res.on("finish", () => {
+                const durationMs = Date.now() - start;
+                log("info", "Request handled", { durationMs, status: res.statusCode });
+                server.close().catch(() => {});
+            });
+
+            await server.connect(transport);
+            await transport.handleRequest(req, res, req.body);
+        } catch (err) {
+            const durationMs = Date.now() - start;
+            log("error", "Request failed", {
+                durationMs,
+                error: err instanceof Error ? err.message : String(err),
+            });
+            if (!res.headersSent) {
+                res.status(500).json({ error: "Internal server error" });
+            }
+        }
+    });
+
+    app.listen(port, () => {
+        log("info", "MCP server started in HTTP mode", { port });
+    });
+}
+
+const useHttp =
+    process.argv.includes("--transport=http") || process.env.TRANSPORT === "http";
+
+if (useHttp) {
+    startHttp().catch(() => process.exit(1));
+} else {
+    startStdio().catch(() => process.exit(1));
+}
