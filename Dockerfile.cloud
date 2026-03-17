@@ -1,0 +1,40 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --ignore-scripts
+
+COPY tsconfig.json ./
+COPY src/ ./src/
+RUN npm run build
+
+FROM node:20-alpine
+
+LABEL org.opencontainers.image.title="Olostep MCP Server"
+LABEL org.opencontainers.image.description="MCP server for web scraping, search, and content extraction powered by Olostep API"
+LABEL org.opencontainers.image.url="https://github.com/olostep/olostep-mcp-server"
+LABEL org.opencontainers.image.source="https://github.com/olostep/olostep-mcp-server"
+LABEL org.opencontainers.image.vendor="Olostep"
+LABEL org.opencontainers.image.licenses="ISC"
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev --ignore-scripts
+
+COPY --from=builder /app/build ./build
+
+ENV NODE_ENV=production
+ENV TRANSPORT=http
+ENV PORT=3000
+
+RUN addgroup -g 1001 -S mcpuser && \
+    adduser -S mcpuser -u 1001 -G mcpuser && \
+    chown -R mcpuser:mcpuser /app
+
+USER mcpuser
+
+EXPOSE 3000
+
+CMD ["node", "build/index.js"]

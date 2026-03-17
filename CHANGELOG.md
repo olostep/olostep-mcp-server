@@ -2,6 +2,19 @@
 
 All notable changes to the Olostep MCP Server will be documented in this file.
 
+## [1.0.11] - 2026-03-16
+
+### Added
+- Cloud-ready HTTP transport support using Express
+- Dual-mode transport support (Stdio and HTTP) via `TRANSPORT` env var or `--transport` flag
+- Health check endpoint (`/health`)
+- Docker configuration for cloud deployment (`Dockerfile.cloud`, `.dockerignore.cloud`)
+
+### Changed
+- Updated `@modelcontextprotocol/sdk` to v1.27.1
+- Refactored server initialization to support multiple transports
+- Improved logging with structured JSON output
+
 ## [1.0.8] - 2024-12-01
 
 ### Added
