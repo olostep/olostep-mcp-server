@@ -7,6 +7,10 @@
 A Model Context Protocol (MCP) server implementation that integrates with [Olostep](https://olostep.com) for web scraping, content extraction, and search capabilities.
 To set up Olostep MCP Server, you need to have an API key. You can get the API key by signing up on the [Olostep website](https://olostep.com/auth).
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/olostep-olostep-mcp-server).
+
 ## Features
 
 - Scrape website content in HTML, Markdown, JSON or Plain Text (with optional parsers)
