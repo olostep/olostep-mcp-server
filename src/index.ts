@@ -3,13 +3,12 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import express from "express";
+import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import { getWebpageMarkdown } from "./tools/getWebpageMarkdown.js";
 import { getWebsiteMap } from "./tools/getWebsiteURLs.js";
 import { scrapeWebsite } from "./tools/scrapeWebsite.js";
 import { searchWeb } from "./tools/searchWeb.js";
-import { getGoogleSearch } from "./tools/getGoogleSearch.js";
 import { answers } from "./tools/answers.js";
 import { batchScrapeUrls } from "./tools/batchScrapeUrls.js";
 import { getBatchResults } from "./tools/getBatchResults.js";
@@ -43,7 +42,7 @@ type AnyTool = { name: string; description: string; schema: any; handler: (...ar
 const tools: AnyTool[] = [
     createMap, createCrawl, batchScrapeUrls, getBatchResults,
     answers, searchWeb, scrapeWebsite, getWebpageMarkdown,
-    getWebsiteMap, getGoogleSearch,
+    getWebsiteMap,
 ];
 
 function createMcpServer(apiKey: string, orbitKey?: string) {
@@ -75,11 +74,11 @@ async function startHttp() {
     const app = express();
     app.use(express.json());
 
-    app.get("/health", (_req, res) => {
+    app.get("/health", (_req: Request, res: Response) => {
         res.json({ status: "ok" });
     });
 
-    app.post("/mcp", async (req, res) => {
+    app.post("/mcp", async (req: Request, res: Response) => {
         const start = Date.now();
         const auth = req.headers.authorization;
         const apiKey = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
