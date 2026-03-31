@@ -506,32 +506,26 @@ Search and retrieve relevant URLs from a website, sorted by relevance to your qu
 }
 ```
 
-### 9. Web Search (`google_search`)
+### 9. Get Batch Results (`get_batch_results`)
 
-Retrieve structured data from web search results.
+Retrieve the results of a previously submitted batch scrape job using its `batch_id`.
 
 ```json
 {
-  "name": "google_search",
+  "name": "get_batch_results",
   "arguments": {
-    "query": "your search query",
-    "country": "US"
+    "batch_id": "batch_abc123"
   }
 }
 ```
 
 #### Parameters:
 
-- `query`: The search query to perform (required)
-- `country`: Country code for localized results (e.g., US, GB) (default: "US")
+- `batch_id`: The batch ID returned from `batch_scrape_urls` (required)
 
 #### Response includes:
 
-- Organic search results with titles, links, and snippets
-- Knowledge graph data when available
-- Related questions (People Also Ask)
-- Related searches
-- Rich snippets and other structured data
+- `batch_id`, `status` (`processing` or `completed`), `total_urls`, `completed_urls`, `items` (array of scraped results per URL with `url`, `custom_id`, `markdown_content`, `html_content`, `json_content`, `text_content`, `status`, `page_metadata`)
 
 ## Error Handling
 
