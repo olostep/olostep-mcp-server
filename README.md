@@ -399,7 +399,7 @@ Scrape up to 10k URLs at the same time. Perfect for large-scale data extraction.
 
 ### 5. Create Crawl (`create_crawl`)
 
-Autonomously discover and scrape entire websites by following links.
+Start an **async** crawl that autonomously discovers and scrapes entire websites by following links. Returns a `crawl_id` — the crawl runs in the background and does **not** return content in this response. You must then call `get_crawl_results` with the `crawl_id` to poll status and retrieve the scraped pages (same two-step pattern as `batch_scrape_urls` + `get_batch_results`).
 
 ```json
 {
@@ -418,6 +418,8 @@ Autonomously discover and scrape entire websites by following links.
 #### Response includes:
 
 - `crawl_id`, `object`, `status`, `start_url`, `max_pages`, `follow_links`, `created`, `formats`, `country`, `parser`
+
+> Pair this call with `get_crawl_results` — do **not** pass a `crawl_id` to `get_batch_results` (crawls and batches are separate resources).
 
 ### 6. Create Map (`create_map`)
 
@@ -526,6 +528,35 @@ Retrieve the results of a previously submitted batch scrape job using its `batch
 #### Response includes:
 
 - `batch_id`, `status` (`processing` or `completed`), `total_urls`, `completed_urls`, `items` (array of scraped results per URL with `url`, `custom_id`, `markdown_content`, `html_content`, `json_content`, `text_content`, `status`, `page_metadata`)
+
+### 10. Get Crawl Results (`get_crawl_results`)
+
+Retrieve the status and scraped pages for an async crawl started with `create_crawl`. This is the required companion to `create_crawl` — `create_crawl` only kicks off the job and returns a `crawl_id`; this tool is how you actually fetch the discovered pages and their content.
+
+```json
+{
+  "name": "get_crawl_results",
+  "arguments": {
+    "crawl_id": "crawl_abc123",
+    "formats": ["markdown"],
+    "items_limit": 20,
+    "cursor": 0
+  }
+}
+```
+
+#### Parameters:
+
+- `crawl_id`: The crawl ID returned from `create_crawl` (required)
+- `formats`: Array of formats to retrieve per page — `markdown`, `html`, `json`, `text` (default: `["markdown"]`)
+- `items_limit`: Max pages to retrieve content for, 1–100 (default: 20)
+- `cursor`: Pagination cursor into the list of discovered pages (default: 0)
+- `search_query`: Optional filter to rank/select pages by relevance to a query
+
+#### Response includes:
+
+- **While in progress:** `crawl_id`, `status` (`in_progress`), `pages_completed`, `pages_total`, and a `message` prompting you to call again in ~10 seconds.
+- **When completed:** `crawl_id`, `status` (`completed`), `pages_returned`, `next_cursor`, `has_more`, and a `pages` array where each entry has `url`, `custom_id`, and the requested content fields (`markdown_content`, `html_content`, `json_content`, `text_content`).
 
 ## Error Handling
 

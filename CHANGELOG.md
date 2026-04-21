@@ -2,6 +2,15 @@
 
 All notable changes to the Olostep MCP Server will be documented in this file.
 
+## [1.0.13] - 2026-04-21
+
+### Added
+- `get_crawl_results` tool — the missing companion to `create_crawl`. Polls crawl status via `GET /v1/crawls/{crawl_id}`, lists discovered pages via `GET /v1/crawls/{crawl_id}/pages`, and retrieves scraped content per page in the requested formats (`markdown`, `html`, `json`, `text`). Supports pagination via `cursor`/`items_limit` and optional `search_query` filtering.
+
+### Fixed
+- Agents using Claude Code, Cursor, and other MCP clients could not complete a crawl workflow — `create_crawl` returned only a `crawl_id` with no paired fetcher, so agents fell back to `get_website_urls` + `batch_scrape_urls`. The new `get_crawl_results` tool closes the loop.
+- Rewrote `create_crawl`'s description to explicitly state it is asynchronous, returns a `crawl_id`, and must be paired with `get_crawl_results` (not `get_batch_results` — crawls and batches are separate API resources).
+
 ## [1.0.11] - 2026-03-16
 
 ### Added

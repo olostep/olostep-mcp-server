@@ -13,6 +13,7 @@ import { answers } from "./tools/answers.js";
 import { batchScrapeUrls } from "./tools/batchScrapeUrls.js";
 import { getBatchResults } from "./tools/getBatchResults.js";
 import { createCrawl } from "./tools/createCrawl.js";
+import { getCrawlResults } from "./tools/getCrawlResults.js";
 import { createMap } from "./tools/createMap.js";
 
 dotenv.config();
@@ -40,7 +41,7 @@ function log(level: string, message: string, extra: Record<string, unknown> = {}
 type AnyTool = { name: string; description: string; schema: any; handler: (...args: any[]) => Promise<any> };
 
 const tools: AnyTool[] = [
-    createMap, createCrawl, batchScrapeUrls, getBatchResults,
+    createMap, createCrawl, getCrawlResults, batchScrapeUrls, getBatchResults,
     answers, searchWeb, scrapeWebsite, getWebpageMarkdown,
     getWebsiteMap,
 ];

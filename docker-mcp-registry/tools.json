@@ -134,7 +134,7 @@
   },
   {
     "name": "create_crawl",
-    "description": "Autonomously discover and scrape entire websites by following links from a start URL",
+    "description": "Start an async crawl that autonomously discovers and scrapes pages from a start URL. Returns a crawl_id — pair with get_crawl_results to fetch content.",
     "arguments": [
       {
         "name": "start_url",
@@ -169,6 +169,41 @@
         "name": "parser",
         "type": "string",
         "desc": "Optional parser ID for specialized content extraction",
+        "optional": true
+      }
+    ]
+  },
+  {
+    "name": "get_crawl_results",
+    "description": "Retrieve the status and scraped pages for a crawl job started with create_crawl. Polls status and fetches content for each discovered page.",
+    "arguments": [
+      {
+        "name": "crawl_id",
+        "type": "string",
+        "desc": "The crawl_id returned from create_crawl"
+      },
+      {
+        "name": "formats",
+        "type": "array",
+        "desc": "Content formats to retrieve per page (e.g. [\"markdown\"]). Default: [\"markdown\"]",
+        "optional": true
+      },
+      {
+        "name": "items_limit",
+        "type": "number",
+        "desc": "Max number of pages to retrieve content for (1-100). Default: 20",
+        "optional": true
+      },
+      {
+        "name": "cursor",
+        "type": "number",
+        "desc": "Pagination cursor into the list of discovered pages. Default: 0",
+        "optional": true
+      },
+      {
+        "name": "search_query",
+        "type": "string",
+        "desc": "Optional filter to rank/select pages by relevance to a query",
         "optional": true
       }
     ]

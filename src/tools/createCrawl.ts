@@ -20,7 +20,7 @@ export interface OlostepCrawlResponse {
 export const createCrawl = {
 	name: "create_crawl",
 	description:
-		"Autonomously discover and scrape entire websites by following links from a start URL.",
+		"Start an ASYNC crawl that autonomously discovers and scrapes pages by following links from a start URL. Returns a crawl_id — the crawl runs in the background and does NOT return scraped content in this response. You MUST then call get_crawl_results with the returned crawl_id to poll status and retrieve the scraped pages (same two-step pattern as batch_scrape_urls + get_batch_results). Do NOT call get_batch_results with a crawl_id — crawls and batches are separate resources.",
 	schema: {
 		start_url: z.string().url().describe("Starting URL for the crawl."),
 		max_pages: z.number().int().min(1).default(10).describe("Maximum number of pages to crawl."),
