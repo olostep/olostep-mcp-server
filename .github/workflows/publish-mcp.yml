@@ -46,13 +46,19 @@ jobs:
         run: npm run build --if-present
 
       - name: Publish to npm
-        run: npm publish
+        run: |
+          VERSION=$(jq -r .version package.json)
+          if npm view "olostep-mcp@$VERSION" version > /dev/null 2>&1; then
+            echo "olostep-mcp@$VERSION already on npm, skipping publish"
+          else
+            npm publish
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Install MCP Publisher
         run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/latest/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          curl -fL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
 
       - name: Login to MCP Registry
         run: ./mcp-publisher login github-oidc
