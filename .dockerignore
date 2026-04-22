@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Source files (we only need build output)
-src/
+# Source files (we only need build output for prod image; cloud build needs src/)
+# src/
 
 # Development files
 *.md

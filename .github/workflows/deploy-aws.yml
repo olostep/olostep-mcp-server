@@ -1,0 +1,73 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "Dockerfile.cloud"
+      - ".dockerignore.cloud"
+      - "deploy/task-definition.json"
+      - ".github/workflows/deploy-aws.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-aws
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1
+      ECR_REPO: olostep-mcp-server
+      CLUSTER: olostep-mcp
+      SERVICE: olostep-mcp-service
+      CONTAINER_NAME: olostep-mcp-server
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::442042530275:role/GitHubActionsMcpDeploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        id: build
+        run: |
+          IMG="${{ steps.ecr.outputs.registry }}/${ECR_REPO}"
+          SHA="${GITHUB_SHA::12}"
+          docker build -f Dockerfile.cloud --platform linux/amd64 \
+            -t "$IMG:$SHA" -t "$IMG:latest" .
+          docker push "$IMG:$SHA"
+          docker push "$IMG:latest"
+          echo "image=$IMG:$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Render task definition
+        id: taskdef
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: deploy/task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build.outputs.image }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.taskdef.outputs.task-definition }}
+          cluster: ${{ env.CLUSTER }}
+          service: ${{ env.SERVICE }}
+          wait-for-service-stability: true
