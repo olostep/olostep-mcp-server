@@ -18,7 +18,10 @@ export interface OlostepCreateMapResponse {
 
 export const createMap = {
 	name: "create_map",
-	description: "Get all URLs on a website. Extract URLs for discovery and site analysis.",
+	description:
+    "Get a LIST of URLs on a website (URL discovery only - does NOT scrape content). " +
+    "Use this only when the user explicitly wants a *list of links* (e.g., 'show me all URLs on this site', 'map this website'). " +
+    "**Do NOT use this as a precursor to scraping** - if the user wants to scrape/crawl a site, use `create_crawl` directly (it discovers AND scrapes in one workflow).",
 	schema: {
 		website_url: z.string().url().describe("Website URL to extract links from."),
 		search_query: z.string().optional().describe('Optional search query to filter URLs (e.g., "blog").'),

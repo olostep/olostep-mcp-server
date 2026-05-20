@@ -12,7 +12,10 @@ export interface BatchScrapeRequestUrl {
 export const batchScrapeUrls = {
 	name: "batch_scrape_urls",
 	description:
-		"Scrape up to 10k URLs at the same time. Perfect for large-scale data extraction. Returns a batch_id immediately. Use get_batch_results with the batch_id to fetch the scraped content once the batch completes (~5-8 min). Set wait_for_completion_seconds to poll automatically.",
+    "Scrape a SPECIFIC, KNOWN list of URLs (typically from different domains). " +
+    "**Do NOT use this for crawling a website** - if the user wants to scrape a whole site or 'crawl' a domain, use `create_crawl` instead. " +
+    "Use this only when you already have an explicit list of URLs to scrape (e.g., user provides a CSV of URLs, or you need to scrape unrelated pages). " +
+    "Returns a batch_id immediately. Use `get_batch_results` with the batch_id to fetch the scraped content once the batch completes (~5–8 min). Set `wait_for_completion_seconds` to poll automatically.",
 	schema: {
 		urls_to_scrape: z
 			.array(
@@ -44,7 +47,7 @@ export const batchScrapeUrls = {
 			.number()
 			.int()
 			.min(0)
-			.max(300)
+			.max(900)
 			.default(0)
 			.describe(
 				"Seconds to wait for batch completion. If >0, polls every 10s until done or timeout, then returns status. Use 0 to return immediately with batch_id (then call get_batch_results later). Recommended: 60 for small batches, 0 for large ones.",

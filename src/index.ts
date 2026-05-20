@@ -34,7 +34,7 @@ function log(level: string, message: string, extra: Record<string, unknown> = {}
         message,
         ...extra,
     };
-    process.stdout.write(JSON.stringify(entry) + "\n");
+    process.stderr.write(JSON.stringify(entry) + "\n");  // ✅ NEW: stderr
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -99,7 +99,7 @@ async function startHttp() {
             res.on("finish", () => {
                 const durationMs = Date.now() - start;
                 log("info", "Request handled", { durationMs, status: res.statusCode });
-                server.close().catch(() => {});
+                //server.close().catch(() => {});
             });
 
             await server.connect(transport);
@@ -116,9 +116,14 @@ async function startHttp() {
         }
     });
 
-    app.listen(port, () => {
+    const httpServer = app.listen(port, () => {
         log("info", "MCP server started in HTTP mode", { port });
     });
+    
+    // Allow long-running requests (e.g., polling for batch/crawl completion)
+    httpServer.timeout = 600000;          // 10 minutes total request timeout
+    httpServer.keepAliveTimeout = 120000; // 2 minutes — how long to keep idle connections open
+    httpServer.headersTimeout = 125000;   // Must be > keepAliveTimeout
 }
 
 const useHttp =
