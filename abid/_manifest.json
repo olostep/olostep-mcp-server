@@ -1,0 +1,87 @@
+{
+  "crawl_id": "crawl_6ekde3cq46",
+  "status": "completed",
+  "pages_returned": 16,
+  "saved_files": [
+    {
+      "url": "https://abid.work/",
+      "path": "index.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/natural-language-processing",
+      "path": "pages/natural-language-processing.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/python",
+      "path": "pages/python.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/programming",
+      "path": "pages/programming.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/large-language-models",
+      "path": "pages/large-language-models.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/data-science",
+      "path": "pages/data-science.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/computer-vision",
+      "path": "pages/computer-vision.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/cheat-sheets",
+      "path": "pages/cheat-sheets.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/data-engineering",
+      "path": "pages/data-engineering.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/sql",
+      "path": "pages/sql.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/artificial-intelligence",
+      "path": "pages/artificial-intelligence.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/career-advice",
+      "path": "pages/career-advice.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/contact",
+      "path": "pages/contact.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/books-by-abid",
+      "path": "pages/books-by-abid.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/machine-learning",
+      "path": "pages/machine-learning.md",
+      "error": null
+    },
+    {
+      "url": "https://abid.work/pages/machine-learning-operations",
+      "path": "pages/machine-learning-operations.md",
+      "error": null
+    }
+  ]
+}

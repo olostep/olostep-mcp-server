@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+      "olostep-local": {
+        "url": "http://localhost:3000/mcp",
+        "headers": {
+          "Authorization": "Bearer olostep_AX5FejvroBTVRpRUHnkhGXA5677zd30f4YN5"
+        }
+      }
+    }
+  }
