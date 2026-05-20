@@ -50,7 +50,7 @@ export const batchScrapeUrls = {
 			.max(900)
 			.default(0)
 			.describe(
-				"Seconds to wait for batch completion. If >0, polls every 10s until done or timeout, then returns status. Use 0 to return immediately with batch_id (then call get_batch_results later). Recommended: 60 for small batches, 0 for large ones.",
+				"Seconds to wait for batch completion. If >0, polls every 10s until done or timeout, then returns status. Use 0 to return immediately with batch_id (then call get_batch_results later). Recommended: 60 for batches <50 URLs, 300–600 for 50–1k URLs, 0 for larger batches (poll separately).",
 			),
 	},
 	handler: async (
