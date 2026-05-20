@@ -5,3 +5,4 @@ src/.DS_Store
 .DS_Store
 .mcpregistry_github_token
 .mcpregistry_registry_token
+.cursor
