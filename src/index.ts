@@ -96,10 +96,11 @@ async function startHttp() {
             const server = createMcpServer(apiKey, orbitKey);
             const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
 
-            res.on("finish", () => {
+            res.on("close", () => {
                 const durationMs = Date.now() - start;
                 log("info", "Request handled", { durationMs, status: res.statusCode });
-                //server.close().catch(() => {});
+                transport.close().catch(() => {});
+                server.close().catch(() => {});
             });
 
             await server.connect(transport);
