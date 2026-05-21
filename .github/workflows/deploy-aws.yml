@@ -71,3 +71,13 @@ jobs:
           cluster: ${{ env.CLUSTER }}
           service: ${{ env.SERVICE }}
           wait-for-service-stability: true
+
+      - name: Setup Node for post-deploy smoke
+        uses: actions/setup-node@v5
+        with:
+          node-version: "lts/*"
+
+      - name: Post-deploy smoke (live remote MCP)
+        env:
+          OLOSTEP_TEST_API_KEY: ${{ secrets.OLOSTEP_TEST_API_KEY }}
+        run: node tests/smoke.mjs remote --url https://mcp.olostep.com/mcp

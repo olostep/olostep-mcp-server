@@ -1,0 +1,46 @@
+name: PR Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  schema-smoke:
+    name: Schema smoke (no API key)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "lts/*"
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Stdio schema smoke
+        run: node tests/smoke.mjs stdio --module ./build/index.js --no-real
+
+  real-api-smoke:
+    name: Real-API smoke (stdio)
+    runs-on: ubuntu-latest
+    # Secrets aren't exposed to PRs from forks (GitHub policy, prevents secret exfiltration).
+    # Fork PRs are covered by `schema-smoke`; a maintainer can promote them to real smoke
+    # by triggering the `Verify PR (manual)` workflow with the PR number.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    needs: schema-smoke
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "lts/*"
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Stdio real-API smoke
+        env:
+          OLOSTEP_TEST_API_KEY: ${{ secrets.OLOSTEP_TEST_API_KEY }}
+        run: node tests/smoke.mjs stdio --module ./build/index.js

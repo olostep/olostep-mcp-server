@@ -1,0 +1,47 @@
+name: Verify PR (manual)
+
+# Maintainer-triggered real-API smoke test against a specific PR's head ref.
+# Use this for fork PRs (where automatic real-API smoke can't run because secrets
+# are not exposed to fork workflows for security reasons).
+#
+# SECURITY: This checks out untrusted PR code and runs it with secrets in env.
+# Only trigger this after manually reviewing the PR diff for anything that could
+# exfiltrate the API key (e.g. modifying tests/smoke.mjs or build scripts to phone
+# home). If the PR looks safe, click Run workflow → enter PR number.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to verify with real-API smoke"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  smoke:
+    name: Real-API smoke (PR #${{ inputs.pr_number }})
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v5
+        with:
+          ref: refs/pull/${{ inputs.pr_number }}/head
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "lts/*"
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Stdio real-API smoke
+        env:
+          OLOSTEP_TEST_API_KEY: ${{ secrets.OLOSTEP_TEST_API_KEY }}
+        run: node tests/smoke.mjs stdio --module ./build/index.js
