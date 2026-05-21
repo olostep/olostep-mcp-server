@@ -12,7 +12,8 @@
     "prepack": "npm run build",
     "prepublishOnly": "npm run build",
     "validate-server-json": "node scripts/validate-schema.mjs",
-    "test:descriptions": "node tests/check-descriptions.mjs"
+    "test:descriptions": "node tests/check-descriptions.mjs",
+    "test:e2e": "node tests/e2e.mjs"
   },
   "files": [
     "build/**/*"

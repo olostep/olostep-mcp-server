@@ -10,6 +10,7 @@ on:
       - "Dockerfile.cloud"
       - ".dockerignore.cloud"
       - "deploy/task-definition.json"
+      - "tests/**"
       - ".github/workflows/deploy-aws.yml"
   workflow_dispatch:
 
@@ -17,13 +18,53 @@ concurrency:
   group: deploy-aws
   cancel-in-progress: false
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
-  deploy:
+  # Deep real-API gate. Spins up the freshly-built server locally and runs the
+  # full e2e suite (every tool + batch/crawl polling + error handling) against
+  # it. If anything fails, `deploy` never runs — bad code cannot reach clients.
+  e2e-gate:
+    name: E2E gate (full real-API suite)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "lts/*"
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Start MCP server (HTTP mode)
+        run: |
+          TRANSPORT=http PORT=3000 node build/index.js &
+          echo "MCP_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/health > /dev/null; then
+              echo "server healthy after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::server did not become healthy in 30s"
+          exit 1
+      - name: Full e2e suite
+        env:
+          OLOSTEP_API_KEY: ${{ secrets.OLOSTEP_TEST_API_KEY }}
+          MCP_URL: http://localhost:3000/mcp
+        run: npm run test:e2e
+      - name: Stop MCP server
+        if: always()
+        run: kill "$MCP_PID" 2>/dev/null || true
+
+  deploy:
+    name: Build & deploy to ECS
+    runs-on: ubuntu-latest
+    needs: e2e-gate # deploy is blocked unless the full e2e suite passed
+    permissions:
+      id-token: write
+      contents: read
     env:
       AWS_REGION: us-east-1
       ECR_REPO: olostep-mcp-server
