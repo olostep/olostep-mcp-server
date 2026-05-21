@@ -71,13 +71,16 @@ jobs:
       CLUSTER: olostep-mcp
       SERVICE: olostep-mcp-service
       CONTAINER_NAME: olostep-mcp-server
+      DOCKERHUB_REPO: olostep/mcp-server
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::442042530275:role/GitHubActionsMcpDeploy
           aws-region: ${{ env.AWS_REGION }}
@@ -96,6 +99,20 @@ jobs:
           docker push "$IMG:$SHA"
           docker push "$IMG:latest"
           echo "image=$IMG:$SHA" >> "$GITHUB_OUTPUT"
+
+      # Keep the public Docker Hub image (what the README tells users to pull)
+      # in sync with what we deploy. Skipped if Docker Hub creds aren't set —
+      # add DOCKERHUB_USERNAME + DOCKERHUB_TOKEN repo secrets to enable.
+      - name: Push image to Docker Hub
+        if: env.DOCKERHUB_TOKEN != ''
+        run: |
+          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          ECR_IMG="${{ steps.ecr.outputs.registry }}/${ECR_REPO}"
+          SHA="${GITHUB_SHA::12}"
+          docker tag "$ECR_IMG:$SHA" "$DOCKERHUB_REPO:$SHA"
+          docker tag "$ECR_IMG:$SHA" "$DOCKERHUB_REPO:latest"
+          docker push "$DOCKERHUB_REPO:$SHA"
+          docker push "$DOCKERHUB_REPO:latest"
 
       - name: Render task definition
         id: taskdef
