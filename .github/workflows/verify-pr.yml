@@ -1,0 +1,61 @@
+name: Verify PR (manual)
+
+# Maintainer-triggered real-API smoke test against a specific PR's head ref.
+# Use this for fork PRs (where automatic real-API smoke can't run because secrets
+# are not exposed to fork workflows for security reasons).
+#
+# SECURITY MODEL:
+# This workflow checks out untrusted PR code and runs it with OLOSTEP_TEST_API_KEY
+# in env. To prevent accidental approval:
+#   1. The job uses the `prod-smoke` GitHub Environment (set up in repo settings →
+#      Environments → prod-smoke → "Required reviewers: ZeeshanAdilButt").
+#      The secret is ONLY materialized after the reviewer clicks "Approve and
+#      deploy" on the pending workflow run. Triggering the workflow alone does
+#      not expose the secret.
+#   2. The job also runs `npm ci --ignore-scripts` so a malicious postinstall
+#      hook in a fork PR's package.json cannot run with the secret in env.
+#
+# Before approving the run, review the PR diff for:
+#   - changes to tests/, package.json scripts (build/prepare/postinstall), or
+#     .github/workflows/
+#   - new dependencies (they could exfiltrate the key during `npm run build`)
+#   - any imports of `process.env` or `child_process` in unexpected places
+# If the PR only touches src/ and a maintainer reviewed it, it's safe to approve.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to verify with real-API smoke"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  integration-verify:
+    name: Integration verify (PR #${{ inputs.pr_number }})
+    runs-on: ubuntu-latest
+    environment: prod-smoke # required reviewer gate — secret only injected after approval
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v5
+        with:
+          ref: refs/pull/${{ inputs.pr_number }}/head
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "lts/*"
+
+      - name: Install (no scripts — neutralizes malicious postinstall in fork PRs)
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        run: npm run build
+
+      - name: Stdio integration test
+        env:
+          OLOSTEP_TEST_API_KEY: ${{ secrets.OLOSTEP_TEST_API_KEY }}
+        run: node tests/smoke.mjs stdio --module ./build/index.js

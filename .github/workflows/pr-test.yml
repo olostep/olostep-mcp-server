@@ -1,0 +1,59 @@
+name: PR Tests
+
+# DO NOT change this trigger to `pull_request_target`.
+# `pull_request_target` runs in the BASE repo's context with secrets exposed and
+# the workflow's GITHUB_TOKEN granted write scope. Combined with `actions/checkout`
+# of the PR head, that's the classic supply-chain exfiltration RCE. The current
+# `pull_request` trigger is what makes fork PRs safe to run automatically.
+on:
+  pull_request:
+    branches: [main]
+
+# Cancel any in-flight runs when a PR is rebased / force-pushed. Saves Olostep API
+# credits (one scrape per real-API run) and CI minutes on noisy PRs.
+concurrency:
+  group: pr-test-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract-check:
+    name: Contract check (schema + goldens, no API key)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "lts/*"
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Stdio contract check (schema invariants)
+        run: node tests/smoke.mjs stdio --module ./build/index.js --no-real
+      - name: Description goldens
+        run: npm run test:descriptions
+
+  integration-test:
+    name: Integration test (real API, stdio)
+    runs-on: ubuntu-latest
+    # Secrets aren't exposed to PRs from forks (GitHub policy, prevents secret exfiltration).
+    # Fork PRs are covered by `contract-check`; a maintainer can promote them to a real
+    # integration run by triggering the `Verify PR (manual)` workflow with the PR number.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    needs: contract-check
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "lts/*"
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Stdio integration test
+        env:
+          OLOSTEP_TEST_API_KEY: ${{ secrets.OLOSTEP_TEST_API_KEY }}
+        run: node tests/smoke.mjs stdio --module ./build/index.js
