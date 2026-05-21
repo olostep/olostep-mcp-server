@@ -1,8 +1,19 @@
 name: PR Tests
 
+# DO NOT change this trigger to `pull_request_target`.
+# `pull_request_target` runs in the BASE repo's context with secrets exposed and
+# the workflow's GITHUB_TOKEN granted write scope. Combined with `actions/checkout`
+# of the PR head, that's the classic supply-chain exfiltration RCE. The current
+# `pull_request` trigger is what makes fork PRs safe to run automatically.
 on:
   pull_request:
     branches: [main]
+
+# Cancel any in-flight runs when a PR is rebased / force-pushed. Saves Olostep API
+# credits (one scrape per real-API run) and CI minutes on noisy PRs.
+concurrency:
+  group: pr-test-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -22,6 +33,8 @@ jobs:
         run: npm run build
       - name: Stdio schema smoke
         run: node tests/smoke.mjs stdio --module ./build/index.js --no-real
+      - name: Description goldens
+        run: npm run test:descriptions
 
   real-api-smoke:
     name: Real-API smoke (stdio)

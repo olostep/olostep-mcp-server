@@ -28,6 +28,7 @@ class StdioTransport {
       env: { ...process.env, OLOSTEP_API_KEY: this.apiKey },
       stdio: ["pipe", "pipe", "pipe"],
     });
+    this.proc.stdout.setEncoding("utf8"); // avoid utf-8 corruption across chunk boundaries
     this.proc.stderr.on("data", () => {}); // server logs go to stderr — ignore
     this.proc.on("error", (e) => {
       console.error("spawn failed:", e.message);
@@ -36,7 +37,7 @@ class StdioTransport {
 
     let buf = "";
     this.proc.stdout.on("data", (chunk) => {
-      buf += chunk.toString();
+      buf += chunk;
       let nl;
       while ((nl = buf.indexOf("\n")) !== -1) {
         const line = buf.slice(0, nl).trim();
@@ -57,7 +58,8 @@ class StdioTransport {
       }
     });
 
-    await new Promise((r) => setTimeout(r, 300)); // give server a tick to boot
+    // JSON-RPC over stdio is request/response — the per-request timeout in `request()`
+    // covers slow boot. No artificial sleep needed.
   }
 
   request(method, params) {
@@ -125,15 +127,22 @@ class RemoteTransport {
 // ---------- util ----------
 
 function parseSse(text) {
-  // Streamable HTTP: lines like "event: message\ndata: {json}\n\n"
+  // SSE per spec: events separated by blank lines; multiple `data:` lines per event
+  // are joined with `\n` before parsing. Today the server emits single-line JSON, but
+  // if it ever pretty-prints or chunks at a `\n` inside a string, the naive grep
+  // would drop the message.
   const out = [];
-  for (const line of text.split("\n")) {
-    if (line.startsWith("data: ")) {
-      try {
-        out.push(JSON.parse(line.slice(6)));
-      } catch {
-        // ignore non-JSON data lines
-      }
+  for (const event of text.split(/\r?\n\r?\n/)) {
+    const dataLines = [];
+    for (const line of event.split(/\r?\n/)) {
+      if (line.startsWith("data: ")) dataLines.push(line.slice(6));
+      else if (line.startsWith("data:")) dataLines.push(line.slice(5));
+    }
+    if (dataLines.length === 0) continue;
+    try {
+      out.push(JSON.parse(dataLines.join("\n")));
+    } catch {
+      // ignore non-JSON event
     }
   }
   return out;
@@ -213,24 +222,38 @@ async function main() {
     if (w?.maximum !== 900) throw new Error(`maximum = ${w?.maximum}, expected 900`);
   });
 
-  await check("schema: create_crawl description marked PREFERRED for crawling", () => {
-    const t = tools.find((x) => x.name === "create_crawl");
-    if (!t?.description?.includes("PREFERRED tool for crawling")) {
-      throw new Error("description missing 'PREFERRED tool for crawling'");
+  // Trip-wires: every tool has a meaningful description that mentions its core verb.
+  // Exact-wording assertions (e.g. "PREFERRED tool for crawling") live in the golden
+  // file at `tests/description-goldens.json` and are checked by
+  // `tests/check-descriptions.mjs`. That separate check fails loudly if descriptions
+  // drift without an intentional goldens update — but doesn't break this smoke on
+  // every wording tweak.
+  await check("schema: every tool has a non-trivial description", () => {
+    for (const t of tools) {
+      if (!t.description || t.description.length < 40) {
+        throw new Error(`tool ${t.name} has missing/short description (${t.description?.length || 0} chars)`);
+      }
     }
   });
 
-  await check("schema: batch_scrape_urls description steers away from crawling", () => {
-    const t = tools.find((x) => x.name === "batch_scrape_urls");
-    if (!t?.description?.includes("Do NOT use this for crawling")) {
-      throw new Error("description missing 'Do NOT use this for crawling'");
-    }
-  });
-
-  await check("schema: create_map description prefers create_crawl for whole-site", () => {
-    const t = tools.find((x) => x.name === "create_map");
-    if (!t?.description?.includes("Prefer `create_crawl`")) {
-      throw new Error("description missing 'Prefer `create_crawl`'");
+  await check("schema: expected tool set is present", () => {
+    const expected = [
+      "scrape_website",
+      "get_webpage_content",
+      "search_web",
+      "answers",
+      "batch_scrape_urls",
+      "get_batch_results",
+      "create_crawl",
+      "get_crawl_results",
+      "create_map",
+      "get_website_urls",
+    ];
+    const got = new Set(tools.map((t) => t.name));
+    const missing = expected.filter((n) => !got.has(n));
+    const unexpected = [...got].filter((n) => !expected.includes(n));
+    if (missing.length || unexpected.length) {
+      throw new Error(`missing=[${missing.join(",")}] unexpected=[${unexpected.join(",")}]`);
     }
   });
 

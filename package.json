@@ -11,7 +11,8 @@
     "build": "tsc && node -e \"const fs=require('fs');const p='build/index.js';let s=fs.readFileSync(p,'utf8');if(!s.startsWith('#!/usr/bin/env node')){fs.writeFileSync(p,'#!/usr/bin/env node\\n'+s);}fs.chmodSync(p,0o755);\"",
     "prepack": "npm run build",
     "prepublishOnly": "npm run build",
-    "validate-server-json": "node scripts/validate-schema.mjs"
+    "validate-server-json": "node scripts/validate-schema.mjs",
+    "test:descriptions": "node tests/check-descriptions.mjs"
   },
   "files": [
     "build/**/*"
