@@ -72,12 +72,12 @@ jobs:
           service: ${{ env.SERVICE }}
           wait-for-service-stability: true
 
-      - name: Setup Node for post-deploy smoke
+      - name: Setup Node for production canary
         uses: actions/setup-node@v5
         with:
           node-version: "lts/*"
 
-      - name: Post-deploy smoke (live remote MCP)
+      - name: Production canary (live mcp.olostep.com)
         env:
           OLOSTEP_TEST_API_KEY: ${{ secrets.OLOSTEP_TEST_API_KEY }}
         run: node tests/smoke.mjs remote --url https://mcp.olostep.com/mcp

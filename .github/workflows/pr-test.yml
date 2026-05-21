@@ -19,8 +19,8 @@ permissions:
   contents: read
 
 jobs:
-  schema-smoke:
-    name: Schema smoke (no API key)
+  contract-check:
+    name: Contract check (schema + goldens, no API key)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -31,19 +31,19 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
-      - name: Stdio schema smoke
+      - name: Stdio contract check (schema invariants)
         run: node tests/smoke.mjs stdio --module ./build/index.js --no-real
       - name: Description goldens
         run: npm run test:descriptions
 
-  real-api-smoke:
-    name: Real-API smoke (stdio)
+  integration-test:
+    name: Integration test (real API, stdio)
     runs-on: ubuntu-latest
     # Secrets aren't exposed to PRs from forks (GitHub policy, prevents secret exfiltration).
-    # Fork PRs are covered by `schema-smoke`; a maintainer can promote them to real smoke
-    # by triggering the `Verify PR (manual)` workflow with the PR number.
+    # Fork PRs are covered by `contract-check`; a maintainer can promote them to a real
+    # integration run by triggering the `Verify PR (manual)` workflow with the PR number.
     if: github.event.pull_request.head.repo.full_name == github.repository
-    needs: schema-smoke
+    needs: contract-check
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -53,7 +53,7 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
-      - name: Stdio real-API smoke
+      - name: Stdio integration test
         env:
           OLOSTEP_TEST_API_KEY: ${{ secrets.OLOSTEP_TEST_API_KEY }}
         run: node tests/smoke.mjs stdio --module ./build/index.js

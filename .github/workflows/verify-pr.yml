@@ -35,8 +35,8 @@ permissions:
   pull-requests: read
 
 jobs:
-  smoke:
-    name: Real-API smoke (PR #${{ inputs.pr_number }})
+  integration-verify:
+    name: Integration verify (PR #${{ inputs.pr_number }})
     runs-on: ubuntu-latest
     environment: prod-smoke # required reviewer gate — secret only injected after approval
     steps:
@@ -55,7 +55,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Stdio real-API smoke
+      - name: Stdio integration test
         env:
           OLOSTEP_TEST_API_KEY: ${{ secrets.OLOSTEP_TEST_API_KEY }}
         run: node tests/smoke.mjs stdio --module ./build/index.js
