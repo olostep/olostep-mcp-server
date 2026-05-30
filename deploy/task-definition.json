@@ -15,7 +15,10 @@
       ],
       "environment": [
         { "name": "TRANSPORT", "value": "http" },
-        { "name": "PORT",      "value": "3000" }
+        { "name": "PORT",      "value": "3000" },
+        { "name": "MCP_OAUTH_AUTHORIZATION_SERVER_URL", "value": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_GHo5vqMsL" },
+        { "name": "MCP_OAUTH_RESOURCE_URL",             "value": "https://mcp.olostep.com" },
+        { "name": "MCP_OAUTH_SCOPES",                   "value": "olostep/api" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
