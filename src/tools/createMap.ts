@@ -23,7 +23,8 @@ export const createMap = {
     "Use when the user wants a list of links: 'show me all URLs on this site', 'map this website', or when you want to surface candidate URLs to the user before scraping a subset. " +
     "Prefer `create_crawl` if the goal is to scrape the whole site — it discovers AND scrapes in one workflow. Use this only when the URL list itself is the deliverable.",
 	schema: {
-		website_url: z.string().url().describe("Website URL to extract links from."),
+		url: z.string().url().optional().describe("Website URL to extract links from."),
+		website_url: z.string().url().optional().describe("Alias for `url`."),
 		search_query: z.string().optional().describe('Optional search query to filter URLs (e.g., "blog").'),
 		top_n: z.number().int().min(1).optional().describe("Optional limit for number of URLs returned."),
 		include_url_patterns: z
@@ -37,13 +38,15 @@ export const createMap = {
 	},
 	handler: async (
 		{
+			url,
 			website_url,
 			search_query,
 			top_n,
 			include_url_patterns,
 			exclude_url_patterns,
 		}: {
-			website_url: string;
+			url?: string;
+			website_url?: string;
 			search_query?: string;
 			top_n?: number;
 			include_url_patterns?: string[];
@@ -51,6 +54,10 @@ export const createMap = {
 		},
 		apiKey: string,
 	) => {
+		const targetUrl = url ?? website_url;
+		if (!targetUrl) {
+			return { isError: true, content: [{ type: "text", text: "Error: a 'url' is required." }] };
+		}
 		try {
 			const headers = new Headers({
 				"Content-Type": "application/json",
@@ -58,7 +65,7 @@ export const createMap = {
 			});
 
 			const payload: Record<string, unknown> = {
-				url: website_url,
+				url: targetUrl,
 			};
 			if (search_query) payload.search_query = search_query;
 			if (typeof top_n === "number") payload.top_n = top_n;
