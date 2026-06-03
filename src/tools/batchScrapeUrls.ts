@@ -17,6 +17,17 @@ export const batchScrapeUrls = {
     "Use this only when you already have an explicit list of URLs to scrape (e.g., user provides a CSV of URLs, or you need to scrape unrelated pages). " +
     "Returns a batch_id immediately. Use `get_batch_results` with the batch_id to fetch the scraped content once the batch completes (~5–8 min). Set `wait_for_completion_seconds` to poll automatically.",
 	schema: {
+		urls: z
+			.array(
+				z.union([
+					z.string().url(),
+					z.object({ url: z.string().url(), custom_id: z.string().optional() }),
+				]),
+			)
+			.min(1)
+			.max(10000)
+			.optional()
+			.describe('Array of URLs to scrape — plain URL strings, or objects with "url" and optional "custom_id".'),
 		urls_to_scrape: z
 			.array(
 				z.object({
@@ -26,7 +37,8 @@ export const batchScrapeUrls = {
 			)
 			.min(1)
 			.max(10000)
-			.describe('JSON array of objects with "url" and optional "custom_id".'),
+			.optional()
+			.describe('Alias for `urls`.'),
 		output_format: z
 			.enum(["markdown", "html", "json", "text"])
 			.default("markdown")
@@ -55,6 +67,7 @@ export const batchScrapeUrls = {
 	},
 	handler: async (
 		{
+			urls,
 			urls_to_scrape,
 			output_format,
 			country,
@@ -62,7 +75,8 @@ export const batchScrapeUrls = {
 			parser,
 			wait_for_completion_seconds,
 		}: {
-			urls_to_scrape: BatchScrapeRequestUrl[];
+			urls?: (string | BatchScrapeRequestUrl)[];
+			urls_to_scrape?: BatchScrapeRequestUrl[];
 			output_format: "markdown" | "html" | "json" | "text";
 			country?: string;
 			wait_before_scraping?: number;
@@ -72,6 +86,10 @@ export const batchScrapeUrls = {
 		apiKey: string,
 		orbitKey?: string,
 	) => {
+		const rawUrls = urls ?? urls_to_scrape;
+		if (!rawUrls || rawUrls.length === 0) {
+			return { isError: true, content: [{ type: "text", text: "Error: 'urls' is required (a non-empty array of URLs)." }] };
+		}
 		try {
 			const headers = new Headers({
 				"Content-Type": "application/json",
@@ -79,10 +97,11 @@ export const batchScrapeUrls = {
 			});
 
 			const formats: string[] = [output_format];
-			const items = urls_to_scrape.map((item) => ({
-				url: item.url,
-				...(item.custom_id && { custom_id: item.custom_id }),
-			}));
+			const items = rawUrls.map((item) =>
+				typeof item === "string"
+					? { url: item }
+					: { url: item.url, ...(item.custom_id && { custom_id: item.custom_id }) },
+			);
 
 			const payload: Record<string, unknown> = {
 				items,

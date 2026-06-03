@@ -24,7 +24,8 @@ export const scrapeWebsite = {
 	description:
 		"Extract content from a single URL. Supports multiple formats and JavaScript rendering.",
 	schema: {
-		url_to_scrape: z.string().url().describe("The URL of the website you want to scrape."),
+		url: z.string().url().optional().describe("The URL of the website you want to scrape."),
+		url_to_scrape: z.string().url().optional().describe("Alias for `url`."),
 		output_format: z
 			.enum(["markdown", "html", "json", "text"])
 			.default("markdown")
@@ -47,13 +48,15 @@ export const scrapeWebsite = {
 	},
 	handler: async (
 		{
+			url,
 			url_to_scrape,
 			output_format,
 			country,
 			wait_before_scraping,
 			parser,
 		}: {
-			url_to_scrape: string;
+			url?: string;
+			url_to_scrape?: string;
 			output_format: "markdown" | "html" | "json" | "text";
 			country?: string;
 			wait_before_scraping?: number;
@@ -62,6 +65,10 @@ export const scrapeWebsite = {
 		apiKey: string,
 		orbitKey?: string,
 	) => {
+		const targetUrl = url ?? url_to_scrape;
+		if (!targetUrl) {
+			return { isError: true, content: [{ type: "text", text: "Error: a 'url' is required." }] };
+		}
 		try {
 			const headers = new Headers({
 				"Content-Type": "application/json",
@@ -70,7 +77,7 @@ export const scrapeWebsite = {
 
 			const formats: string[] = [output_format];
 			const body: Record<string, unknown> = {
-				url_to_scrape,
+				url_to_scrape: targetUrl,
 				formats,
 				wait_before_scraping: wait_before_scraping ?? 0,
 			};

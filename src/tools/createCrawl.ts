@@ -25,7 +25,8 @@ export const createCrawl = {
     "Starts an ASYNC crawl that autonomously discovers and scrapes pages by following links from a start URL. Returns a crawl_id - the crawl runs in the background. You MUST then call `get_crawl_results` with the returned crawl_id to poll status and retrieve the scraped pages. " +
     "Do NOT call `get_batch_results` with a crawl_id - crawls and batches are separate resources.",
 	schema: {
-		start_url: z.string().url().describe("Starting URL for the crawl."),
+		url: z.string().url().optional().describe("Starting URL for the crawl."),
+		start_url: z.string().url().optional().describe("Alias for `url`."),
 		max_pages: z.number().int().min(1).default(10).describe("Maximum number of pages to crawl."),
 		follow_links: z.boolean().default(true).describe("Whether to follow links found on pages."),
 		output_format: z
@@ -37,6 +38,7 @@ export const createCrawl = {
 	},
 	handler: async (
 		{
+			url,
 			start_url,
 			max_pages,
 			follow_links,
@@ -44,7 +46,8 @@ export const createCrawl = {
 			country,
 			parser,
 		}: {
-			start_url: string;
+			url?: string;
+			start_url?: string;
 			max_pages?: number;
 			follow_links?: boolean;
 			output_format: "markdown" | "html" | "json" | "text";
@@ -54,6 +57,10 @@ export const createCrawl = {
 		apiKey: string,
 		orbitKey?: string,
 	) => {
+		const targetUrl = url ?? start_url;
+		if (!targetUrl) {
+			return { isError: true, content: [{ type: "text", text: "Error: a 'url' is required." }] };
+		}
 		try {
 			const headers = new Headers({
 				"Content-Type": "application/json",
@@ -62,7 +69,7 @@ export const createCrawl = {
 
 			const formats: string[] = [output_format];
 			const payload: Record<string, unknown> = {
-				start_url,
+				start_url: targetUrl,
 				max_pages: max_pages ?? 10,
 				follow_links: follow_links ?? true,
 				formats,

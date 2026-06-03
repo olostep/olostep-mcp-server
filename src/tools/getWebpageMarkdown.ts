@@ -14,11 +14,16 @@ export const getWebpageMarkdown = {
     name: "get_webpage_content",
     description: "Retrieve content of a webpage in markdown",
     schema: {
-        url_to_scrape: z.string().url().describe("The URL of the webpage to scrape."),
+        url: z.string().url().optional().describe("The URL of the webpage to scrape."),
+        url_to_scrape: z.string().url().optional().describe("Alias for `url`."),
         wait_before_scraping: z.number().int().min(0).default(0).describe("Time to wait in milliseconds before starting the scrape."),
         country: z.string().optional().describe("Residential country to load the request from (e.g., US, CA, GB). Optional."),
     },
-    handler: async ({ url_to_scrape, wait_before_scraping, country }: { url_to_scrape: string; wait_before_scraping: number; country?: string }, apiKey: string, orbitKey?: string) => {
+    handler: async ({ url, url_to_scrape, wait_before_scraping, country }: { url?: string; url_to_scrape?: string; wait_before_scraping: number; country?: string }, apiKey: string, orbitKey?: string) => {
+        const targetUrl = url ?? url_to_scrape;
+        if (!targetUrl) {
+            return { isError: true, content: [{ type: "text", text: "Error: a 'url' is required." }] };
+        }
         try {
             const headers = new Headers({
                 'Content-Type': 'application/json',
@@ -26,7 +31,7 @@ export const getWebpageMarkdown = {
             });
 
             const payload = {
-                url_to_scrape: url_to_scrape,
+                url_to_scrape: targetUrl,
                 wait_before_scraping: wait_before_scraping,
                 formats: ["markdown"],
                 ...(country && { country: country }),
