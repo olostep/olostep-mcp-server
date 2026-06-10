@@ -278,7 +278,6 @@ async function main() {
     const r = await call(client, "create_crawl", {
       start_url: "https://example.com",
       max_pages: 2,
-      follow_links: true,
       output_format: "markdown",
     }, 120000);
     const data = parseToolText(r);
