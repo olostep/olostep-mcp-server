@@ -10,7 +10,6 @@ export interface OlostepCrawlResponse {
 	status?: string;
 	start_url?: string;
 	max_pages?: number;
-	follow_links?: boolean;
 	created?: string;
 	formats?: string[];
 	country?: string;
@@ -27,8 +26,7 @@ export const createCrawl = {
 	schema: {
 		url: z.string().url().optional().describe("Starting URL for the crawl."),
 		start_url: z.string().url().optional().describe("Alias for `url`."),
-		max_pages: z.number().int().min(1).default(10).describe("Maximum number of pages to crawl."),
-		follow_links: z.boolean().default(true).describe("Whether to follow links found on pages."),
+		max_pages: z.number().int().min(1).default(10).describe("Maximum number of pages to crawl. Set to 1 to scrape only the start URL."),
 		output_format: z
 			.enum(["markdown", "html", "json", "text"])
 			.default("markdown")
@@ -41,7 +39,6 @@ export const createCrawl = {
 			url,
 			start_url,
 			max_pages,
-			follow_links,
 			output_format,
 			country,
 			parser,
@@ -49,7 +46,6 @@ export const createCrawl = {
 			url?: string;
 			start_url?: string;
 			max_pages?: number;
-			follow_links?: boolean;
 			output_format: "markdown" | "html" | "json" | "text";
 			country?: string;
 			parser?: string;
@@ -71,7 +67,6 @@ export const createCrawl = {
 			const payload: Record<string, unknown> = {
 				start_url: targetUrl,
 				max_pages: max_pages ?? 10,
-				follow_links: follow_links ?? true,
 				formats,
 			};
 			if (country) payload.country = country;

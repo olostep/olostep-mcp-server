@@ -3,13 +3,13 @@
   "name": "io.github.olostep/olostep-mcp-server",
   "title": "Olostep MCP Server",
   "description": "Search, scrape, and crawl the web for AI agents. Batch scraping and answers with citations.",
-  "version": "1.0.13",
+  "version": "1.0.15",
   "icon": "assets/logo.png",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "olostep-mcp",
-      "version": "1.0.13",
+      "version": "1.0.15",
       "transport": {
         "type": "stdio"
       }

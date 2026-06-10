@@ -144,13 +144,7 @@
       {
         "name": "max_pages",
         "type": "number",
-        "desc": "Maximum number of pages to crawl",
-        "optional": true
-      },
-      {
-        "name": "follow_links",
-        "type": "boolean",
-        "desc": "Whether to follow links found on pages",
+        "desc": "Maximum number of pages to crawl. Set to 1 to scrape only the start URL",
         "optional": true
       },
       {

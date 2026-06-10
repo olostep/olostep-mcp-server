@@ -407,7 +407,6 @@ Start an **async** crawl that autonomously discovers and scrapes entire websites
   "arguments": {
     "start_url": "https://example.com/docs",
     "max_pages": 25,
-    "follow_links": true,
     "output_format": "markdown",
     "country": "US",
     "parser": "@olostep/doc-parser"
@@ -417,7 +416,7 @@ Start an **async** crawl that autonomously discovers and scrapes entire websites
 
 #### Response includes:
 
-- `crawl_id`, `object`, `status`, `start_url`, `max_pages`, `follow_links`, `created`, `formats`, `country`, `parser`
+- `crawl_id`, `object`, `status`, `start_url`, `max_pages`, `created`, `formats`, `country`, `parser`
 
 > Pair this call with `get_crawl_results` — do **not** pass a `crawl_id` to `get_batch_results` (crawls and batches are separate resources).
 
