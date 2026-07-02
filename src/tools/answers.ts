@@ -16,14 +16,20 @@ export interface OlostepAnswersResponse {
 export const answers = {
 	name: "answers",
 	description:
-		"Search the web and return AI-powered answers in the JSON structure you want, with sources and citations.",
+		"Answer a factual question using web search, optionally shaped into a flat JSON object of fields " +
+		"(returned with sources and citations). Best for a bounded, factual answer (e.g. a company's founding " +
+		"year, a product's current price). It is NOT reliable for enumerating a live list from a page (e.g. " +
+		"'the latest N blog posts with titles and dates'). For that, use create_map or get_webpage_content on " +
+		"the page and read the results instead.",
 	schema: {
 		task: z.string().describe("Question or task to answer using web data."),
 		json: z
 			.union([z.string(), z.record(z.any())])
 			.optional()
 			.describe(
-				'Optional JSON schema/object or a short description of the desired output shape. Example object: { "book_title": "", "author": "", "release_date": "" }',
+				'Optional shape for the answer: a flat JSON object of the fields you want. ' +
+				'Example: { "book_title": "", "author": "", "release_date": "" }. ' +
+				'Keep it flat. Deeply nested shapes or long lists are unreliable.',
 			),
 	},
 	handler: async (
