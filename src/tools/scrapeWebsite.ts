@@ -29,7 +29,11 @@ export const scrapeWebsite = {
 		output_format: z
 			.enum(["markdown", "html", "json", "text"])
 			.default("markdown")
-			.describe('Choose format ("html", "markdown", "json", or "text"). Default: "markdown"'),
+			.describe(
+				'Output format. "markdown" (default), "html", and "text" need no extra config. ' +
+				'"json" returns STRUCTURED data and requires either a `parser` OR an `llm_extract` schema ' +
+				'describing the fields to pull. Do not request "json" on its own.',
+			),
 		country: z
 			.string()
 			.optional()
@@ -45,6 +49,17 @@ export const scrapeWebsite = {
 			.string()
 			.optional()
 			.describe('Optional parser ID for specialized extraction (e.g., "@olostep/amazon-product").'),
+		llm_extract: z
+			.object({
+				schema: z.record(z.any()).optional(),
+				prompt: z.string().optional(),
+			})
+			.optional()
+			.describe(
+				'Defines what to pull when output_format is "json". Provide a `schema` (a JSON-schema object of ' +
+				'the fields you want, e.g. { "type": "object", "properties": { "title": { "type": "string" } } }) ' +
+				'and/or a `prompt`. Required for JSON output unless a `parser` is given.',
+			),
 	},
 	handler: async (
 		{
@@ -54,6 +69,7 @@ export const scrapeWebsite = {
 			country,
 			wait_before_scraping,
 			parser,
+			llm_extract,
 		}: {
 			url?: string;
 			url_to_scrape?: string;
@@ -61,6 +77,7 @@ export const scrapeWebsite = {
 			country?: string;
 			wait_before_scraping?: number;
 			parser?: string;
+			llm_extract?: { schema?: Record<string, unknown>; prompt?: string };
 		},
 		apiKey: string,
 		orbitKey?: string,
@@ -68,6 +85,17 @@ export const scrapeWebsite = {
 		const targetUrl = url ?? url_to_scrape;
 		if (!targetUrl) {
 			return { isError: true, content: [{ type: "text", text: "Error: a 'url' is required." }] };
+		}
+		if (output_format === "json" && !parser && !llm_extract) {
+			return {
+				isError: true,
+				content: [{
+					type: "text",
+					text: 'Error: output_format "json" needs a `parser` or an `llm_extract` schema ' +
+						'(e.g. llm_extract: { schema: { "type": "object", "properties": { "title": { "type": "string" } } } }). ' +
+						'Add one, or use "markdown"/"html"/"text".',
+				}],
+			};
 		}
 		try {
 			const headers = new Headers({
@@ -86,6 +114,10 @@ export const scrapeWebsite = {
 			if (parser) {
 				// Include parser-based extraction alongside selected format
 				body.parser_extract = { parser_id: parser };
+			}
+			if (llm_extract) {
+				// Schema/prompt the API uses to fill JSON output
+				body.llm_extract = llm_extract;
 			}
 
 			const response = await fetch(OLOSTEP_SCRAPE_API_URL, {
