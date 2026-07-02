@@ -2,7 +2,7 @@
   "version": 1,
   "tools": {
     "answers": {
-      "description": "Search the web and return AI-powered answers in the JSON structure you want, with sources and citations."
+      "description": "Answer a factual question using web search, optionally shaped into a flat JSON object of fields (returned with sources and citations). Best for a bounded, factual answer (e.g. a company's founding year, a product's current price). It is NOT reliable for enumerating a live list from a page (e.g. 'the latest N blog posts with titles and dates'). For that, use create_map or get_webpage_content on the page and read the results instead."
     },
     "batch_scrape_urls": {
       "description": "Scrape a SPECIFIC, KNOWN list of URLs (typically from different domains). **Do NOT use this for crawling a website** - if the user wants to scrape a whole site or 'crawl' a domain, use `create_crawl` instead. Use this only when you already have an explicit list of URLs to scrape (e.g., user provides a CSV of URLs, or you need to scrape unrelated pages). Returns a batch_id immediately. Use `get_batch_results` with the batch_id to fetch the scraped content once the batch completes (~5–8 min). Set `wait_for_completion_seconds` to poll automatically."

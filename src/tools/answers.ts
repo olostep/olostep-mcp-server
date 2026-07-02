@@ -19,7 +19,7 @@ export const answers = {
 		"Answer a factual question using web search, optionally shaped into a flat JSON object of fields " +
 		"(returned with sources and citations). Best for a bounded, factual answer (e.g. a company's founding " +
 		"year, a product's current price). It is NOT reliable for enumerating a live list from a page (e.g. " +
-		"'the latest N blog posts with titles and dates') — for that, use create_map or get_webpage_content on " +
+		"'the latest N blog posts with titles and dates'). For that, use create_map or get_webpage_content on " +
 		"the page and read the results instead.",
 	schema: {
 		task: z.string().describe("Question or task to answer using web data."),
@@ -29,7 +29,7 @@ export const answers = {
 			.describe(
 				'Optional shape for the answer: a flat JSON object of the fields you want. ' +
 				'Example: { "book_title": "", "author": "", "release_date": "" }. ' +
-				'Keep it flat — deeply nested shapes or long lists are unreliable.',
+				'Keep it flat. Deeply nested shapes or long lists are unreliable.',
 			),
 	},
 	handler: async (
