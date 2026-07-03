@@ -101,6 +101,19 @@ async function startHttp() {
         res.json({ status: "ok" });
     });
 
+    // OpenAI Apps domain verification. Serves the challenge token as plain text
+    // at the origin-root well-known URL so ChatGPT can confirm we control this
+    // host. Token comes from an env var so it can be set/rotated without a code
+    // change. Dormant (404) until the token is configured.
+    app.get("/.well-known/openai-apps-challenge", (_req: Request, res: Response) => {
+        const token = process.env.OPENAI_APPS_CHALLENGE_TOKEN;
+        if (!token) {
+            res.status(404).type("text/plain").send("");
+            return;
+        }
+        res.type("text/plain").send(token);
+    });
+
     // OAuth 2.0 Protected Resource Metadata (RFC 9728). Lets ChatGPT discover
     // which authorization server (Cognito) to use. Only mounted when configured.
     if (OAUTH_ENABLED) {
