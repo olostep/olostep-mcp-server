@@ -86,11 +86,16 @@ function createMcpServer(apiKey: string, orbitKey?: string) {
     const server = new McpServer({ name: "olostep", version: "1.0.0" });
 
     for (const tool of tools) {
-        server.registerTool(
+        const registered = server.registerTool(
             tool.name,
             { description: tool.description, inputSchema: tool.schema, annotations: annotationsFor(tool.name) },
             async (params: Record<string, unknown>) => wrap(await tool.handler(params, apiKey, orbitKey))
         );
+        // The SDK stamps every tool with an experimental `execution: {taskSupport}`
+        // field (its async-tasks feature). We don't use tasks, and that extra
+        // field can trip strict tool-list validators, so drop it — keeping the
+        // wire shape to plain name/description/inputSchema/annotations.
+        (registered as { execution?: unknown }).execution = undefined;
     }
 
     return server;
