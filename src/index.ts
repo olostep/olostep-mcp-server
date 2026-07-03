@@ -68,13 +68,27 @@ const tools: AnyTool[] = [
     getWebsiteMap,
 ];
 
+// MCP tool annotations. Every tool must declare all three hints (some clients,
+// e.g. ChatGPT Apps, reject tools that omit any of them). All Olostep tools hit
+// the live web (open world) and none delete or overwrite data (never
+// destructive). Most only read; the two that start jobs are writes. Default is
+// read-only so any new tool is valid out of the box — list writers explicitly.
+const WRITE_TOOLS = new Set(["create_crawl", "batch_scrape_urls"]);
+function annotationsFor(name: string) {
+    return {
+        readOnlyHint: !WRITE_TOOLS.has(name),
+        destructiveHint: false,
+        openWorldHint: true,
+    };
+}
+
 function createMcpServer(apiKey: string, orbitKey?: string) {
     const server = new McpServer({ name: "olostep", version: "1.0.0" });
 
     for (const tool of tools) {
         server.registerTool(
             tool.name,
-            { description: tool.description, inputSchema: tool.schema },
+            { description: tool.description, inputSchema: tool.schema, annotations: annotationsFor(tool.name) },
             async (params: Record<string, unknown>) => wrap(await tool.handler(params, apiKey, orbitKey))
         );
     }
