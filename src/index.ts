@@ -75,9 +75,14 @@ const tools: AnyTool[] = [
 // read-only so any new tool is valid out of the box — list writers explicitly.
 const WRITE_TOOLS = new Set(["create_crawl", "batch_scrape_urls"]);
 function annotationsFor(name: string) {
+    const isWrite = WRITE_TOOLS.has(name);
     return {
-        readOnlyHint: !WRITE_TOOLS.has(name),
+        readOnlyHint: !isWrite,
         destructiveHint: false,
+        // Reads are idempotent (same call, same result, no extra effect). The two
+        // writers start a NEW job each call, so they are not idempotent. OpenAI's
+        // submission check expects all four hint fields present.
+        idempotentHint: !isWrite,
         openWorldHint: true,
     };
 }
@@ -125,6 +130,7 @@ function createMcpServer(apiKey: string, orbitKey?: string) {
                     if (a) {
                         t.readOnlyHint = a.readOnlyHint;
                         t.destructiveHint = a.destructiveHint;
+                        t.idempotentHint = a.idempotentHint;
                         t.openWorldHint = a.openWorldHint;
                     }
                     // The SDK's zod->JSON-schema conversion stamps inputSchema with a
