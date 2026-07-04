@@ -82,13 +82,19 @@ function annotationsFor(name: string) {
     };
 }
 
+// Human-readable title from the snake_case tool name (e.g. "create_map" ->
+// "Create Map"). OpenAI's Apps tool examples always include a `title`.
+function titleFor(name: string): string {
+    return name.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
 function createMcpServer(apiKey: string, orbitKey?: string) {
     const server = new McpServer({ name: "olostep", version: "1.0.0" });
 
     for (const tool of tools) {
         const registered = server.registerTool(
             tool.name,
-            { description: tool.description, inputSchema: tool.schema, annotations: annotationsFor(tool.name) },
+            { title: titleFor(tool.name), description: tool.description, inputSchema: tool.schema, annotations: annotationsFor(tool.name) },
             async (params: Record<string, unknown>) => wrap(await tool.handler(params, apiKey, orbitKey))
         );
         // The SDK stamps every tool with an experimental `execution: {taskSupport}`
@@ -120,6 +126,13 @@ function createMcpServer(apiKey: string, orbitKey?: string) {
                         t.readOnlyHint = a.readOnlyHint;
                         t.destructiveHint = a.destructiveHint;
                         t.openWorldHint = a.openWorldHint;
+                    }
+                    // The SDK's zod->JSON-schema conversion stamps inputSchema with a
+                    // draft-07 `$schema` meta key. That extra key isn't in OpenAI's
+                    // reference shape and can make a strict validator fail to parse the
+                    // tool (then wrongly report it as missing annotations). Drop it.
+                    if (t?.inputSchema && typeof t.inputSchema === "object") {
+                        delete t.inputSchema.$schema;
                     }
                 }
             }
