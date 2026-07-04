@@ -98,6 +98,35 @@ function createMcpServer(apiKey: string, orbitKey?: string) {
         (registered as { execution?: unknown }).execution = undefined;
     }
 
+    // ChatGPT Apps' submission validator reads readOnlyHint/openWorldHint/
+    // destructiveHint from the TOP LEVEL of each tool, not from the nested
+    // `annotations` object that the MCP spec (and other clients) use. Mirror the
+    // three hints to the top level so the scanner detects them, while keeping
+    // `annotations` intact for spec-compliant clients. We do this by wrapping the
+    // SDK's tools/list handler so the hints reflect whatever annotationsFor sets.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const low = (server as any).server;
+    const handlers = low?._requestHandlers as Map<string, (req: unknown, extra: unknown) => Promise<any>> | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const originalListTools = handlers?.get("tools/list");
+    if (handlers && originalListTools) {
+        handlers.set("tools/list", async (req: unknown, extra: unknown) => {
+            const result = await originalListTools(req, extra);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const listTools = (result as { tools?: any[] })?.tools;
+            if (Array.isArray(listTools)) {
+                for (const t of listTools) {
+                    const a = t?.annotations;
+                    if (a) {
+                        t.readOnlyHint = a.readOnlyHint;
+                        t.destructiveHint = a.destructiveHint;
+                        t.openWorldHint = a.openWorldHint;
+                    }
+                }
+            }
+            return result;
+        });
+    }
+
     return server;
 }
 
