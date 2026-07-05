@@ -109,12 +109,13 @@ function createMcpServer(apiKey: string, orbitKey?: string) {
         (registered as { execution?: unknown }).execution = undefined;
     }
 
-    // ChatGPT Apps' submission validator reads readOnlyHint/openWorldHint/
-    // destructiveHint from the TOP LEVEL of each tool, not from the nested
-    // `annotations` object that the MCP spec (and other clients) use. Mirror the
-    // three hints to the top level so the scanner detects them, while keeping
-    // `annotations` intact for spec-compliant clients. We do this by wrapping the
-    // SDK's tools/list handler so the hints reflect whatever annotationsFor sets.
+    // Clean each tool object in tools/list to exactly match OpenAI's Apps
+    // reference shape (name/title/description/inputSchema/annotations). The hints
+    // stay ONLY in the nested `annotations` object, per the spec and OpenAI docs
+    // (no top-level duplicates — unexpected top-level keys can make a strict
+    // validator reject the tool and report its annotations as missing). We only
+    // strip the draft-07 `$schema` meta key the SDK's zod->JSON-schema conversion
+    // stamps onto inputSchema, which isn't part of the reference shape.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const low = (server as any).server;
     const handlers = low?._requestHandlers as Map<string, (req: unknown, extra: unknown) => Promise<any>> | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -126,17 +127,6 @@ function createMcpServer(apiKey: string, orbitKey?: string) {
             const listTools = (result as { tools?: any[] })?.tools;
             if (Array.isArray(listTools)) {
                 for (const t of listTools) {
-                    const a = t?.annotations;
-                    if (a) {
-                        t.readOnlyHint = a.readOnlyHint;
-                        t.destructiveHint = a.destructiveHint;
-                        t.idempotentHint = a.idempotentHint;
-                        t.openWorldHint = a.openWorldHint;
-                    }
-                    // The SDK's zod->JSON-schema conversion stamps inputSchema with a
-                    // draft-07 `$schema` meta key. That extra key isn't in OpenAI's
-                    // reference shape and can make a strict validator fail to parse the
-                    // tool (then wrongly report it as missing annotations). Drop it.
                     if (t?.inputSchema && typeof t.inputSchema === "object") {
                         delete t.inputSchema.$schema;
                     }
