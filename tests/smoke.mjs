@@ -208,11 +208,11 @@ async function main() {
   await transport.notify("notifications/initialized", {});
 
   let tools;
-  await check("tools/list returns 10 tools", async () => {
+  await check("tools/list returns 18 tools", async () => {
     const r = await transport.request("tools/list", {});
     tools = r?.tools || [];
-    if (tools.length !== 10) {
-      throw new Error(`got ${tools.length} tools, expected 10`);
+    if (tools.length !== 18) {
+      throw new Error(`got ${tools.length} tools, expected 18`);
     }
   });
 
@@ -248,6 +248,14 @@ async function main() {
       "get_crawl_results",
       "create_map",
       "get_website_urls",
+      "create_monitor",
+      "list_monitors",
+      "get_monitor",
+      "update_monitor",
+      "pause_monitor",
+      "resume_monitor",
+      "delete_monitor",
+      "get_monitor_events",
     ];
     const got = new Set(tools.map((t) => t.name));
     const missing = expected.filter((n) => !got.has(n));
