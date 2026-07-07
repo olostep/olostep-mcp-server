@@ -11,6 +11,9 @@ RUN npm run build
 
 FROM node:20-alpine
 
+# Patch OpenSSL for CVE-2026-34182 (requires >= 3.5.7-r0)
+RUN apk update && apk upgrade --no-cache openssl libcrypto3 libssl3
+
 LABEL org.opencontainers.image.title="Olostep MCP Server"
 LABEL org.opencontainers.image.description="MCP server for web scraping, search, and content extraction powered by Olostep API"
 LABEL org.opencontainers.image.url="https://github.com/olostep/olostep-mcp-server"
