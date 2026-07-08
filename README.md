@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/olostep-olostep-mcp-server-badge.png)](https://mseep.ai/app/olostep-olostep-mcp-server)
+
 # Olostep MCP Server
 
 [Docker Hub](https://hub.docker.com/r/olostep/mcp-server)
