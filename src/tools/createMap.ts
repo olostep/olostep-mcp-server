@@ -69,8 +69,9 @@ export const createMap = {
 			};
 			if (search_query) payload.search_query = search_query;
 			if (typeof top_n === "number") payload.top_n = top_n;
-			if (include_url_patterns?.length) payload.include_url_patterns = include_url_patterns;
-			if (exclude_url_patterns?.length) payload.exclude_url_patterns = exclude_url_patterns;
+			// REST /v1/maps filters on include_urls / exclude_urls, so map the tool input names to those keys.
+			if (include_url_patterns?.length) payload.include_urls = include_url_patterns;
+			if (exclude_url_patterns?.length) payload.exclude_urls = exclude_url_patterns;
 
 			const response = await fetch(OLOSTEP_MAP_API_URL, {
 				method: "POST",
