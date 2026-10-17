@@ -12,9 +12,8 @@ export interface OlostepMapApiResponse {
 export const getWebsiteMap = {
     name: "get_website_urls",
     description:
-    "Search and retrieve relevant URLs from a website (URL discovery only - does NOT scrape content). " +
-    "Use this only when the user wants a *filtered list of links* matching a search query. " +
-    "**Do NOT use this as a precursor to scraping** - if the user wants to scrape/crawl a site, use `create_crawl` directly.",
+    "Find URLs on a website that match a search query, ranked by relevance. " +
+    "Returns links only and does not scrape page content.",
     schema: {
         url: z.string().url().describe("The URL of the website to map."),
         search_query: z.string().describe("The search query to sort URLs by."),

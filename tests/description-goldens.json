@@ -5,10 +5,10 @@
       "description": "Answer a factual question using web search, optionally shaped into a flat JSON object of fields (returned with sources and citations). Best for a bounded, factual answer (e.g. a company's founding year, a product's current price). It is NOT reliable for enumerating a live list from a page (e.g. 'the latest N blog posts with titles and dates'). For that, use create_map or get_webpage_content on the page and read the results instead."
     },
     "batch_scrape_urls": {
-      "description": "Scrape a SPECIFIC, KNOWN list of URLs (typically from different domains). **Do NOT use this for crawling a website** - if the user wants to scrape a whole site or 'crawl' a domain, use `create_crawl` instead. Use this only when you already have an explicit list of URLs to scrape (e.g., user provides a CSV of URLs, or you need to scrape unrelated pages). Returns a batch_id immediately. Use `get_batch_results` with the batch_id to fetch the scraped content once the batch completes (~5–8 min). Set `wait_for_completion_seconds` to poll automatically."
+      "description": "Scrape a known list of URLs (up to 10,000) in one async job, for example URLs from a CSV or from search results. Returns a batch_id right away. `get_batch_results` returns the scraped content for that batch_id once the batch completes (about 5-8 min). Set `wait_for_completion_seconds` to wait for completion in the same call."
     },
     "create_crawl": {
-      "description": "**PREFERRED tool for crawling a website.** Use this whenever the user says 'crawl', 'scrape the whole site', 'get all pages from a site', or wants multiple pages from a single domain. This is the CORRECT tool for any whole-site scraping task. **Do NOT use `batch_scrape_urls` for crawling** - that tool is only for when you already have a specific list of unrelated URLs from different domains. Starts an ASYNC crawl that autonomously discovers and scrapes pages by following links from a start URL. Returns a crawl_id - the crawl runs in the background. You MUST then call `get_crawl_results` with the returned crawl_id to poll status and retrieve the scraped pages. Do NOT call `get_batch_results` with a crawl_id - crawls and batches are separate resources."
+      "description": "Crawl a website from a start URL: follows links on the same site and scrapes each page it finds, up to `max_pages`. Suited to getting many pages from one site, such as a docs section or a blog. Runs async and returns a crawl_id. `get_crawl_results` returns the crawl status and scraped pages for that crawl_id. Crawls and batches are separate resources, so a crawl_id works with `get_crawl_results`, not `get_batch_results`."
     },
     "create_map": {
       "description": "Get a LIST of URLs on a website (URL discovery only — does NOT scrape content). Use when the user wants a list of links: 'show me all URLs on this site', 'map this website', or when you want to surface candidate URLs to the user before scraping a subset. Prefer `create_crawl` if the goal is to scrape the whole site — it discovers AND scrapes in one workflow. Use this only when the URL list itself is the deliverable."
@@ -23,7 +23,7 @@
       "description": "Retrieve content of a webpage in markdown"
     },
     "get_website_urls": {
-      "description": "Search and retrieve relevant URLs from a website (URL discovery only - does NOT scrape content). Use this only when the user wants a *filtered list of links* matching a search query. **Do NOT use this as a precursor to scraping** - if the user wants to scrape/crawl a site, use `create_crawl` directly."
+      "description": "Find URLs on a website that match a search query, ranked by relevance. Returns links only and does not scrape page content."
     },
     "scrape_website": {
       "description": "Extract content from a single URL. Supports multiple formats and JavaScript rendering."
