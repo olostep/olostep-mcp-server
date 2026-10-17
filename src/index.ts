@@ -29,15 +29,21 @@ const OAUTH_SCOPES = (process.env.MCP_OAUTH_SCOPES ?? "olostep/api").split(/\s+/
 const OAUTH_RESOURCE_URL = (process.env.MCP_OAUTH_RESOURCE_URL ?? "").replace(/\/+$/, "");
 const OAUTH_ENABLED = OAUTH_AS_URL.length > 0;
 
-function oauthResourceUrl(req: Request): string {
-    if (OAUTH_RESOURCE_URL) return OAUTH_RESOURCE_URL;
+function requestOrigin(req: Request): string {
+    if (OAUTH_RESOURCE_URL) return new URL(OAUTH_RESOURCE_URL).origin;
     const proto = ((req.headers["x-forwarded-proto"] as string) || req.protocol).split(",")[0];
     const host = ((req.headers["x-forwarded-host"] as string) || req.headers.host || "").split(",")[0];
     return `${proto}://${host}`;
 }
 
+// The resource must equal the URL clients connect to, including the /mcp path.
+function oauthResourceUrl(req: Request): string {
+    return OAUTH_RESOURCE_URL || `${requestOrigin(req)}/mcp`;
+}
+
+// Metadata is served at the origin root, so build it from the origin, not the resource.
 function oauthProtectedResourceMetadataUrl(req: Request): string {
-    return `${oauthResourceUrl(req)}/.well-known/oauth-protected-resource`;
+    return `${requestOrigin(req)}/.well-known/oauth-protected-resource`;
 }
 
 type ToolResult = { isError?: boolean; content: { type: "text"; text: string }[] };
@@ -174,7 +180,7 @@ async function startHttp() {
     // OAuth 2.0 Protected Resource Metadata (RFC 9728). Lets ChatGPT discover
     // which authorization server (Cognito) to use. Only mounted when configured.
     if (OAUTH_ENABLED) {
-        app.get("/.well-known/oauth-protected-resource", (req: Request, res: Response) => {
+        app.get(["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"], (req: Request, res: Response) => {
             res.json({
                 resource: oauthResourceUrl(req),
                 authorization_servers: [OAUTH_AS_URL],

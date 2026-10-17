@@ -12,10 +12,9 @@ export interface BatchScrapeRequestUrl {
 export const batchScrapeUrls = {
 	name: "batch_scrape_urls",
 	description:
-    "Scrape a SPECIFIC, KNOWN list of URLs (typically from different domains). " +
-    "**Do NOT use this for crawling a website** - if the user wants to scrape a whole site or 'crawl' a domain, use `create_crawl` instead. " +
-    "Use this only when you already have an explicit list of URLs to scrape (e.g., user provides a CSV of URLs, or you need to scrape unrelated pages). " +
-    "Returns a batch_id immediately. Use `get_batch_results` with the batch_id to fetch the scraped content once the batch completes (~5–8 min). Set `wait_for_completion_seconds` to poll automatically.",
+    "Scrape a known list of URLs (up to 10,000) in one async job, for example URLs from a CSV or from search results. " +
+    "Returns a batch_id right away. `get_batch_results` returns the scraped content for that batch_id once the batch completes (about 5-8 min). " +
+    "Set `wait_for_completion_seconds` to wait for completion in the same call.",
 	schema: {
 		urls: z
 			.array(
