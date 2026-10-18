@@ -227,7 +227,8 @@ async function main() {
     const r = await call(client, "batch_scrape_urls", {
       urls_to_scrape: [
         { url: "https://example.com", custom_id: "0" },
-        { url: "https://iana.org/domains/example", custom_id: "1" },
+        // Direct URL: batch items that redirect currently stall the batch.
+        { url: "https://www.iana.org/help/example-domains", custom_id: "1" },
       ],
       output_format: "markdown",
       wait_for_completion_seconds: 0,
