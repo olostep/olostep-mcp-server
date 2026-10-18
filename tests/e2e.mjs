@@ -248,7 +248,9 @@ async function main() {
   if (batchId) {
     try {
       let completed = false;
-      for (let i = 0; i < 18 && !completed; i++) {
+      // Batches usually take 5-8 min, so poll up to 8 min (48 x 10s).
+      const polls = 48;
+      for (let i = 0; i < polls && !completed; i++) {
         const r = await call(client, "get_batch_results", {
           batch_id: batchId,
           formats: ["markdown"],
@@ -262,7 +264,7 @@ async function main() {
           log(!r.isError ? "PASS" : "FAIL", "get_batch_results", `status=${status} items=${count}`);
           break;
         }
-        if (i < 17) await sleep(10000);
+        if (i < polls - 1) await sleep(10000);
       }
       if (!completed) log("FAIL", "get_batch_results", "timeout after polling");
     } catch (e) {
