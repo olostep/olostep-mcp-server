@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Headers } from "node-fetch";
 import fetch from "node-fetch";
+import { getBatchResults } from "./getBatchResults.js";
 
 const OLOSTEP_API_URL = "https://api.olostep.com/v1";
 
@@ -13,8 +14,8 @@ export const batchScrapeUrls = {
 	name: "batch_scrape_urls",
 	description:
     "Scrape a known list of URLs (up to 10,000) in one async job, for example URLs from a CSV or from search results. " +
-    "Returns a batch_id right away. `get_batch_results` returns the scraped content for that batch_id once the batch completes (about 5-8 min). " +
-    "Set `wait_for_completion_seconds` to wait for completion in the same call.",
+    "Waits up to `wait_for_completion_seconds` (default 45) and returns the scraped content when the batch finishes in that time. " +
+    "Larger batches (usually 5-8 min) return a batch_id instead, and `get_batch_results` returns their content once done.",
 	schema: {
 		urls: z
 			.array(
@@ -59,9 +60,9 @@ export const batchScrapeUrls = {
 			.int()
 			.min(0)
 			.max(900)
-			.default(0)
+			.default(45)
 			.describe(
-				"Seconds to wait for batch completion. If >0, polls every 10s until done or timeout, then returns status. Use 0 to return immediately with batch_id (then call get_batch_results later). Recommended: 60 for batches <50 URLs, 300–600 for 50–1k URLs, 0 for larger batches (poll separately).",
+				"Seconds to wait for the batch to finish and return its content in this call. 0 returns the batch_id right away.",
 			),
 	},
 	handler: async (
@@ -132,9 +133,9 @@ export const batchScrapeUrls = {
 			const data = (await response.json()) as Record<string, unknown>;
 			const batchId = (data.id || data.batch_id) as string | undefined;
 
-			const waitSeconds = wait_for_completion_seconds ?? 0;
+			const waitSeconds = wait_for_completion_seconds ?? 45;
 			if (waitSeconds > 0 && batchId) {
-				const pollIntervalMs = 10_000;
+				const pollIntervalMs = 5_000;
 				const deadline = Date.now() + waitSeconds * 1000;
 
 				while (Date.now() < deadline) {
@@ -149,15 +150,21 @@ export const batchScrapeUrls = {
 					const statusData = (await statusRes.json()) as Record<string, unknown>;
 					const status = String(statusData.status || "").toLowerCase();
 
-					if (status === "completed" || status === "failed") {
+					if (status === "completed") {
+						// Hand back the content directly instead of asking for a second call.
+						const totalUrls = Number(statusData.total_urls ?? 20) || 20;
+						return await getBatchResults.handler(
+							{ batch_id: batchId, formats: [output_format], items_limit: Math.min(totalUrls, 20) },
+							apiKey,
+						);
+					}
+					if (status === "failed") {
 						return {
 							content: [{
 								type: "text",
 								text: JSON.stringify({
 									...statusData,
-									message: status === "completed"
-										? "Batch completed. Call get_batch_results with this batch_id to retrieve scraped content."
-										: "Batch failed.",
+									message: "Batch failed.",
 								}, null, 2),
 							}],
 						};

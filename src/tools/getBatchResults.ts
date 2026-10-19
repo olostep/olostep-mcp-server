@@ -142,10 +142,11 @@ export const getBatchResults = {
 							custom_id: item.custom_id,
 							url: item.url,
 						};
-						if (content.markdown_content) result.markdown_content = content.markdown_content;
-						if (content.html_content) result.html_content = content.html_content;
-						if (content.json_content) result.json_content = content.json_content;
-						if (content.text_content) result.text_content = content.text_content;
+						// The retrieve API can return more formats than asked for; keep only the requested ones.
+						if (retrieveFormats.includes("markdown") && content.markdown_content) result.markdown_content = content.markdown_content;
+						if (retrieveFormats.includes("html") && content.html_content) result.html_content = content.html_content;
+						if (retrieveFormats.includes("json") && content.json_content) result.json_content = content.json_content;
+						if (retrieveFormats.includes("text") && content.text_content) result.text_content = content.text_content;
 						return result;
 					} catch {
 						return { custom_id: item.custom_id, url: item.url, error: "Retrieve request failed" };
