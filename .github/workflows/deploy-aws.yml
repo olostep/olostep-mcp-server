@@ -121,6 +121,8 @@ jobs:
           task-definition: deploy/task-definition.json
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.build.outputs.image }}
+          environment-variables: |
+            MCP_OAUTH_REGISTER_CLIENT_SECRET=${{ secrets.CLAUDE_OAUTH_CLIENT_SECRET }}
 
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
