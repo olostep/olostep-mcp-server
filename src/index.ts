@@ -5,6 +5,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
+import fetch from "node-fetch";
 import { getWebpageMarkdown } from "./tools/getWebpageMarkdown.js";
 import { getWebsiteMap } from "./tools/getWebsiteURLs.js";
 import { scrapeWebsite } from "./tools/scrapeWebsite.js";
@@ -28,6 +29,28 @@ const OAUTH_AS_URL = (process.env.MCP_OAUTH_AUTHORIZATION_SERVER_URL ?? "").repl
 const OAUTH_SCOPES = (process.env.MCP_OAUTH_SCOPES ?? "olostep/api").split(/\s+/).filter(Boolean);
 const OAUTH_RESOURCE_URL = (process.env.MCP_OAUTH_RESOURCE_URL ?? "").replace(/\/+$/, "");
 const OAUTH_ENABLED = OAUTH_AS_URL.length > 0;
+
+// Cognito has no dynamic client registration, which Claude's directory needs.
+// When a register client is set, this server fronts Cognito's metadata with a
+// /register endpoint that hands out that pre-made client to allowed callbacks.
+// Login and tokens still go straight to Cognito.
+const REGISTER_CLIENT_ID = (process.env.MCP_OAUTH_REGISTER_CLIENT_ID ?? "").trim();
+const REGISTER_CLIENT_SECRET = (process.env.MCP_OAUTH_REGISTER_CLIENT_SECRET ?? "").trim();
+const REGISTER_REDIRECT_URIS = (process.env.MCP_OAUTH_REGISTER_REDIRECT_URIS ?? "")
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+const REGISTER_ENABLED = OAUTH_ENABLED && REGISTER_CLIENT_ID.length > 0 && REGISTER_REDIRECT_URIS.length > 0;
+
+let cognitoMetadata: Record<string, unknown> | null = null;
+
+async function getCognitoMetadata(): Promise<Record<string, unknown>> {
+    if (cognitoMetadata) return cognitoMetadata;
+    const res = await fetch(`${OAUTH_AS_URL}/.well-known/openid-configuration`);
+    if (!res.ok) throw new Error(`Cognito discovery returned ${res.status}`);
+    cognitoMetadata = (await res.json()) as Record<string, unknown>;
+    return cognitoMetadata;
+}
 
 function requestOrigin(req: Request): string {
     if (OAUTH_RESOURCE_URL) return new URL(OAUTH_RESOURCE_URL).origin;
@@ -190,9 +213,64 @@ async function startHttp() {
         app.get(["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"], (req: Request, res: Response) => {
             res.json({
                 resource: oauthResourceUrl(req),
-                authorization_servers: [OAUTH_AS_URL],
+                authorization_servers: [REGISTER_ENABLED ? requestOrigin(req) : OAUTH_AS_URL],
                 scopes_supported: OAUTH_SCOPES,
                 resource_documentation: "https://docs.olostep.com/",
+            });
+        });
+    }
+
+    // Authorization server metadata (RFC 8414). Same Cognito endpoints, plus our /register.
+    if (REGISTER_ENABLED) {
+        app.get(
+            ["/.well-known/oauth-authorization-server", "/.well-known/oauth-authorization-server/mcp", "/.well-known/openid-configuration"],
+            async (req: Request, res: Response) => {
+                try {
+                    const cognito = await getCognitoMetadata();
+                    const origin = requestOrigin(req);
+                    res.json({
+                        issuer: origin,
+                        authorization_endpoint: cognito.authorization_endpoint,
+                        token_endpoint: cognito.token_endpoint,
+                        registration_endpoint: `${origin}/register`,
+                        jwks_uri: cognito.jwks_uri,
+                        scopes_supported: OAUTH_SCOPES,
+                        response_types_supported: ["code"],
+                        grant_types_supported: ["authorization_code", "refresh_token"],
+                        code_challenge_methods_supported: ["S256"],
+                        token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic"],
+                    });
+                } catch (err) {
+                    log("error", "Cognito discovery failed", { error: err instanceof Error ? err.message : String(err) });
+                    res.status(502).json({ error: "temporarily_unavailable" });
+                }
+            },
+        );
+
+        // Dynamic client registration (RFC 7591). Only callbacks on the allow-list get the client.
+        app.post("/register", (req: Request, res: Response) => {
+            const requested: unknown = req.body?.redirect_uris;
+            const uris = Array.isArray(requested) ? requested.filter((u): u is string => typeof u === "string") : [];
+            const allowed = uris.filter(u => REGISTER_REDIRECT_URIS.includes(u));
+            if (allowed.length === 0) {
+                log("warn", "Rejected client registration", { redirect_uris: uris });
+                res.status(400).json({
+                    error: "invalid_redirect_uri",
+                    error_description: "This redirect URI is not registered with Olostep.",
+                });
+                return;
+            }
+            log("info", "Client registration", { redirect_uris: allowed });
+            res.status(201).json({
+                client_id: REGISTER_CLIENT_ID,
+                ...(REGISTER_CLIENT_SECRET && { client_secret: REGISTER_CLIENT_SECRET, client_secret_expires_at: 0 }),
+                client_id_issued_at: Math.floor(Date.now() / 1000),
+                redirect_uris: allowed,
+                grant_types: ["authorization_code", "refresh_token"],
+                response_types: ["code"],
+                token_endpoint_auth_method: REGISTER_CLIENT_SECRET ? "client_secret_post" : "none",
+                scope: OAUTH_SCOPES.join(" "),
+                client_name: typeof req.body?.client_name === "string" ? req.body.client_name : undefined,
             });
         });
     }

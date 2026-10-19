@@ -19,6 +19,8 @@
         { "name": "MCP_OAUTH_AUTHORIZATION_SERVER_URL", "value": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_GHo5vqMsL" },
         { "name": "MCP_OAUTH_RESOURCE_URL",             "value": "https://mcp.olostep.com/mcp" },
         { "name": "MCP_OAUTH_SCOPES",                   "value": "olostep/api" },
+        { "name": "MCP_OAUTH_REGISTER_CLIENT_ID",       "value": "v66ead5c4f81r7b6rfi9qdh52" },
+        { "name": "MCP_OAUTH_REGISTER_REDIRECT_URIS",   "value": "https://claude.ai/api/mcp/auth_callback" },
         { "name": "OPENAI_APPS_CHALLENGE_TOKEN",         "value": "7sOnWbNuPHQCFp1sS161PKyur62vGkdeGLX8qTJ7IOI" }
       ],
       "logConfiguration": {
