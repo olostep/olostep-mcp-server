@@ -16,11 +16,10 @@ export interface OlostepAnswersResponse {
 export const answers = {
 	name: "answers",
 	description:
-		"Answer a factual question using web search, optionally shaped into a flat JSON object of fields " +
-		"(returned with sources and citations). Best for a bounded, factual answer (e.g. a company's founding " +
-		"year, a product's current price). It is NOT reliable for enumerating a live list from a page (e.g. " +
-		"'the latest N blog posts with titles and dates'). For that, use create_map or get_webpage_content on " +
-		"the page and read the results instead.",
+		"Answer a factual question using web search, optionally shaped into a flat JSON object of fields, " +
+		"with sources and citations. Suited to bounded, factual answers such as a company's founding year " +
+		"or a product's current price. Lists of items on a live page, such as the latest blog posts, come " +
+		"back more reliably from scraping that page.",
 	schema: {
 		task: z.string().describe("Question or task to answer using web data."),
 		json: z
