@@ -39,7 +39,7 @@ interface RetrieveResponse {
 export const getCrawlResults = {
 	name: "get_crawl_results",
 	description:
-		"Retrieve the status and scraped pages for a crawl job. Pass the crawl_id returned by create_crawl. If the crawl is still in_progress, returns the current status so you can call again later (poll every ~10 seconds). Once completed, returns the list of discovered pages with their scraped content in the requested formats. This is the REQUIRED companion to create_crawl — create_crawl only kicks off the async job, this tool is how you actually get the content.",
+		"Retrieve the status and scraped pages for a crawl job started with create_crawl. While the crawl is in_progress it returns the current status, so call again after about 10 seconds. Once completed, it returns the discovered pages with their scraped content in the requested formats.",
 	schema: {
 		crawl_id: z
 			.string()

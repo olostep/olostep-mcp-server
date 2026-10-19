@@ -83,6 +83,8 @@ const WRITE_TOOLS = new Set(["create_crawl", "batch_scrape_urls"]);
 function annotationsFor(name: string) {
     const isWrite = WRITE_TOOLS.has(name);
     return {
+        // Claude's directory reads the human-readable title from annotations.
+        title: titleFor(name),
         readOnlyHint: !isWrite,
         destructiveHint: false,
         // Reads are idempotent (same call, same result, no extra effect). The two
@@ -96,7 +98,7 @@ function annotationsFor(name: string) {
 // Human-readable title from the snake_case tool name (e.g. "create_map" ->
 // "Create Map"). OpenAI's Apps tool examples always include a `title`.
 function titleFor(name: string): string {
-    return name.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    return name.split("_").map(w => w === "urls" ? "URLs" : w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
 function createMcpServer(apiKey: string, orbitKey?: string) {
@@ -159,6 +161,11 @@ async function startHttp() {
     const port = parseInt(process.env.PORT ?? "3000", 10);
     const app = express();
     app.use(express.json());
+
+    // No favicon of our own; send clients (and Claude's directory) to the site icon.
+    app.get("/favicon.ico", (_req: Request, res: Response) => {
+        res.redirect(302, "https://www.olostep.com/favicon.ico");
+    });
 
     app.get("/health", (_req: Request, res: Response) => {
         res.json({ status: "ok" });
