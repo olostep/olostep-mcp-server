@@ -301,7 +301,7 @@ Extract content from a single URL. Supports multiple formats and JavaScript rend
     "output_format": "markdown",
     "country": "US",
     "wait_before_scraping": 1000,
-    "parser": "@olostep/amazon-product"
+    "parser": "@olostep/amazon-it-product"
   }
 }
 ```
@@ -388,7 +388,7 @@ Scrape up to 10k URLs at the same time. Perfect for large-scale data extraction.
     "output_format": "markdown",
     "country": "US",
     "wait_before_scraping": 500,
-    "parser": "@olostep/amazon-product"
+    "parser": "@olostep/amazon-it-product"
   }
 }
 ```

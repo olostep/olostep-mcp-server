@@ -29,7 +29,7 @@
       {
         "name": "parser",
         "type": "string",
-        "desc": "Optional parser ID for specialized extraction (e.g., @olostep/amazon-product)",
+        "desc": "Optional parser ID for specialized extraction (e.g., @olostep/amazon-it-product)",
         "optional": true
       }
     ]
