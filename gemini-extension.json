@@ -1,0 +1,21 @@
+{
+  "name": "olostep",
+  "version": "0.1.0",
+  "description": "Search, scrape, crawl and extract web data from Gemini CLI using Olostep.",
+  "settings": [
+    {
+      "name": "Olostep API Key",
+      "description": "Your Olostep API key. Get one from https://www.olostep.com",
+      "envVar": "OLOSTEP_API_KEY",
+      "sensitive": true
+    }
+  ],
+  "mcpServers": {
+    "olostep": {
+      "httpUrl": "https://mcp.olostep.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${OLOSTEP_API_KEY}"
+      }
+    }
+  }
+}
