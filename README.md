@@ -88,6 +88,29 @@ npm install -g olostep-mcp
 
 ## Client Setup
 
+### Gemini CLI
+
+Install the Olostep extension in [Gemini CLI](https://geminicli.com/) (requires an [Olostep API key](https://olostep.com/auth)):
+
+```bash
+gemini extensions install https://github.com/olostep/olostep-mcp-server
+```
+
+Configure your API key through Gemini CLI's sensitive extension settings:
+
+```bash
+gemini extensions config olostep-mcp-server OLOSTEP_API_KEY
+```
+
+Gemini CLI stores this value in your system keychain. Restart Gemini CLI, then verify the extension and MCP server:
+
+```bash
+gemini extensions list
+gemini mcp list
+```
+
+For authentication errors, configure the key again. For connection errors, restart Gemini CLI and run `gemini mcp list`. See the official [Gemini CLI extensions documentation](https://geminicli.com/docs/extensions/) for details.
+
 ### Cursor
 
 The easiest way is to use the remote endpoint. Create or edit `.cursor/mcp.json` in your project root:
