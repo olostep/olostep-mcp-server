@@ -13,11 +13,23 @@
     "create_map": {
       "description": "List the URLs on a website without scraping their content. Suited to showing a site's pages, mapping a site, or picking a subset of URLs to scrape. `create_crawl` both discovers and scrapes pages when their content is needed too."
     },
+    "create_monitor": {
+      "description": "Create a recurring web monitor. Olostep visits the target on a schedule, detects changes, and can notify you by email, Slack, or SMS, or POST a webhook. Returns status 'provisioning' immediately; the monitor becomes 'active' once setup completes (usually within a minute)."
+    },
+    "delete_monitor": {
+      "description": "Delete a monitor. The monitor's schedule is cancelled and it is soft-deleted (status becomes 'deleted'). This cannot be undone. Snapshot history is preserved but the monitor stops running."
+    },
     "get_batch_results": {
       "description": "Retrieve the status and scraped content for a batch job. Pass the batch_id returned by batch_scrape_urls. If the batch is completed, returns the scraped content for each URL. If still in_progress, returns the current status so you can call again later."
     },
     "get_crawl_results": {
       "description": "Retrieve the status and scraped pages for a crawl job started with create_crawl. While the crawl is in_progress it returns the current status, so call again after about 10 seconds. Once completed, it returns the discovered pages with their scraped content in the requested formats."
+    },
+    "get_monitor": {
+      "description": "Retrieve a single monitor by ID, including its schedule, current status, last-run result, and total snapshot count."
+    },
+    "get_monitor_events": {
+      "description": "List the snapshot history for a monitor, newest first. Each event shows whether a change was detected and a plain-language summary of what changed. Use the next_cursor for pagination."
     },
     "get_webpage_content": {
       "description": "Retrieve content of a webpage in markdown"
@@ -25,11 +37,23 @@
     "get_website_urls": {
       "description": "Find URLs on a website that match a search query, ranked by relevance. Returns links only and does not scrape page content."
     },
+    "list_monitors": {
+      "description": "List all monitors for this API key. Returns each monitor's id, query, schedule, status, and last-run summary."
+    },
+    "pause_monitor": {
+      "description": "Pause an active monitor. The schedule stops running; existing snapshots and history are preserved. Only monitors with status 'active' can be paused. Resume with resume_monitor."
+    },
+    "resume_monitor": {
+      "description": "Resume a paused monitor. The schedule is re-enabled and the monitor starts running again. Only monitors with status 'paused' can be resumed."
+    },
     "scrape_website": {
       "description": "Extract content from a single URL. Supports multiple formats and JavaScript rendering."
     },
     "search_web": {
       "description": "Search the web for a given query and return structured results (non-AI, parser-based)."
+    },
+    "update_monitor": {
+      "description": "Update a monitor's frequency, notification settings, webhook, or metadata. Include only the fields you want to change. Changing frequency deletes and recreates the underlying schedule. Passing webhook: null removes the webhook. Unsupported fields are silently ignored."
     }
   }
 }
