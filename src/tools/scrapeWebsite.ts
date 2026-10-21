@@ -48,7 +48,7 @@ export const scrapeWebsite = {
 		parser: z
 			.string()
 			.optional()
-			.describe('Optional parser ID for specialized extraction (e.g., "@olostep/amazon-product").'),
+			.describe('Optional parser ID for specialized extraction (e.g., "@olostep/amazon-it-product").'),
 		llm_extract: z
 			.object({
 				schema: z.record(z.any()).optional(),
