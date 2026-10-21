@@ -99,7 +99,7 @@ gemini extensions install https://github.com/olostep/olostep-mcp-server
 Configure your API key through Gemini CLI's sensitive extension settings:
 
 ```bash
-gemini extensions config olostep-mcp-server OLOSTEP_API_KEY
+gemini extensions config olostep OLOSTEP_API_KEY
 ```
 
 Gemini CLI stores this value in your system keychain. Restart Gemini CLI, then verify the extension and MCP server:

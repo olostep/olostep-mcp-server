@@ -1,5 +1,5 @@
 {
-  "name": "olostep-mcp-server",
+  "name": "olostep",
   "version": "0.1.0",
   "description": "Search, scrape, crawl and extract web data from Gemini CLI using Olostep.",
   "settings": [
