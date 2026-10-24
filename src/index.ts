@@ -321,6 +321,18 @@ async function startHttp() {
         }
     });
 
+    // Stateless server: no standalone SSE stream (GET) and no sessions to end (DELETE).
+    // The spec requires 405 here; a 404 tells clients like Cursor their session is gone,
+    // so they reconnect in a loop and give up.
+    app.all("/mcp", (_req: Request, res: Response) => {
+        res.setHeader("Allow", "POST");
+        res.status(405).json({
+            jsonrpc: "2.0",
+            error: { code: -32000, message: "Method not allowed." },
+            id: null,
+        });
+    });
+
     const httpServer = app.listen(port, () => {
         log("info", "MCP server started in HTTP mode", { port });
     });
