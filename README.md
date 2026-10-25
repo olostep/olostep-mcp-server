@@ -241,6 +241,28 @@ Add this to your `./codeium/windsurf/model_config.json`:
 }
 ```
 
+### Cline
+
+Add this to your `cline_mcp_settings.json` (Cline → MCP Servers → Configure):
+
+```json
+{
+  "mcpServers": {
+    "olostep": {
+      "command": "npx",
+      "args": ["-y", "olostep-mcp"],
+      "env": {
+        "OLOSTEP_API_KEY": "YOUR_API_KEY_HERE"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+Cline can also set this up for you: ask it to install the MCP server from this repository, and it follows [llms-install.md](llms-install.md).
+
 ### VS Code
 
 Add this to your `.vscode/mcp.json`:
