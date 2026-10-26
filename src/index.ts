@@ -6,6 +6,8 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import fetch from "node-fetch";
+import { createHash } from "node:crypto";
+import { isLoopbackRedirect, packState, unpackState } from "./oauthRelay.js";
 import { getWebpageMarkdown } from "./tools/getWebpageMarkdown.js";
 import { getWebsiteMap } from "./tools/getWebsiteURLs.js";
 import { scrapeWebsite } from "./tools/scrapeWebsite.js";
@@ -41,6 +43,12 @@ const REGISTER_REDIRECT_URIS = (process.env.MCP_OAUTH_REGISTER_REDIRECT_URIS ?? 
     .map(s => s.trim())
     .filter(Boolean);
 const REGISTER_ENABLED = OAUTH_ENABLED && REGISTER_CLIENT_ID.length > 0 && REGISTER_REDIRECT_URIS.length > 0;
+
+// Loopback relay for local tools with random callback ports (see oauthRelay.ts).
+// When on, login and token requests go through this server, which passes them to
+// Cognito unchanged for fixed callbacks and relays loopback ones.
+const RELAY_ENABLED = REGISTER_ENABLED && REGISTER_CLIENT_SECRET.length > 0 && process.env.MCP_OAUTH_RELAY_LOOPBACK === "true";
+const RELAY_KEY = createHash("sha256").update(`loopback-relay:${REGISTER_CLIENT_SECRET}`).digest("hex");
 
 let cognitoMetadata: Record<string, unknown> | null = null;
 
@@ -230,8 +238,8 @@ async function startHttp() {
                     const origin = requestOrigin(req);
                     res.json({
                         issuer: origin,
-                        authorization_endpoint: cognito.authorization_endpoint,
-                        token_endpoint: cognito.token_endpoint,
+                        authorization_endpoint: RELAY_ENABLED ? `${origin}/authorize` : cognito.authorization_endpoint,
+                        token_endpoint: RELAY_ENABLED ? `${origin}/token` : cognito.token_endpoint,
                         registration_endpoint: `${origin}/register`,
                         jwks_uri: cognito.jwks_uri,
                         scopes_supported: OAUTH_SCOPES,
@@ -251,7 +259,7 @@ async function startHttp() {
         app.post("/register", (req: Request, res: Response) => {
             const requested: unknown = req.body?.redirect_uris;
             const uris = Array.isArray(requested) ? requested.filter((u): u is string => typeof u === "string") : [];
-            const allowed = uris.filter(u => REGISTER_REDIRECT_URIS.includes(u));
+            const allowed = uris.filter(u => REGISTER_REDIRECT_URIS.includes(u) || (RELAY_ENABLED && isLoopbackRedirect(u)));
             if (allowed.length === 0) {
                 log("warn", "Rejected client registration", { redirect_uris: uris });
                 res.status(400).json({
@@ -272,6 +280,98 @@ async function startHttp() {
                 scope: OAUTH_SCOPES.join(" "),
                 client_name: typeof req.body?.client_name === "string" ? req.body.client_name : undefined,
             });
+        });
+    }
+
+    if (RELAY_ENABLED) {
+        const relayCallback = (req: Request) => `${requestOrigin(req)}/oauth/callback`;
+
+        // Fixed callbacks pass straight through to Cognito. Loopback callbacks get our
+        // own callback instead, with theirs packed into a signed state.
+        app.get("/authorize", async (req: Request, res: Response) => {
+            const params = new URLSearchParams();
+            for (const [k, v] of Object.entries(req.query)) {
+                if (typeof v === "string") params.set(k, v);
+            }
+            const redirectUri = params.get("redirect_uri") ?? "";
+            if (params.get("client_id") !== REGISTER_CLIENT_ID) {
+                res.status(400).json({ error: "invalid_client" });
+                return;
+            }
+            let cognito: Record<string, unknown>;
+            try {
+                cognito = await getCognitoMetadata();
+            } catch {
+                res.status(502).json({ error: "temporarily_unavailable" });
+                return;
+            }
+            if (REGISTER_REDIRECT_URIS.includes(redirectUri)) {
+                res.redirect(302, `${cognito.authorization_endpoint}?${params}`);
+                return;
+            }
+            if (!isLoopbackRedirect(redirectUri)) {
+                log("warn", "Rejected authorize redirect", { redirect_uri: redirectUri });
+                res.status(400).json({ error: "invalid_request", error_description: "Unregistered redirect_uri." });
+                return;
+            }
+            // Relayed codes travel through a browser to a local port, so PKCE is required.
+            if (!params.get("code_challenge") || params.get("code_challenge_method") !== "S256") {
+                res.status(400).json({ error: "invalid_request", error_description: "PKCE with S256 is required." });
+                return;
+            }
+            params.set("state", packState(redirectUri, params.get("state") ?? "", RELAY_KEY));
+            params.set("redirect_uri", relayCallback(req));
+            log("info", "Relaying loopback sign-in");
+            res.redirect(302, `${cognito.authorization_endpoint}?${params}`);
+        });
+
+        app.get("/oauth/callback", (req: Request, res: Response) => {
+            const unpacked = typeof req.query.state === "string" ? unpackState(req.query.state, RELAY_KEY) : null;
+            if (!unpacked) {
+                res.status(400).type("text/plain").send("This sign-in link has expired or is invalid. Start the sign-in again from your app.");
+                return;
+            }
+            const target = new URL(unpacked.redirectUri);
+            for (const key of ["code", "error", "error_description"]) {
+                const value = req.query[key];
+                if (typeof value === "string") target.searchParams.set(key, value);
+            }
+            if (unpacked.clientState) target.searchParams.set("state", unpacked.clientState);
+            res.redirect(302, target.toString());
+        });
+
+        // Token requests are forwarded to Cognito. For relayed codes the redirect_uri
+        // is swapped back to ours, since that is what Cognito issued the code against.
+        app.options(["/token", "/register"], (_req: Request, res: Response) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+            res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            res.status(204).end();
+        });
+
+        app.post("/token", express.urlencoded({ extended: false }), async (req: Request, res: Response) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            const body = new URLSearchParams();
+            for (const [k, v] of Object.entries(req.body ?? {})) {
+                if (typeof v === "string") body.set(k, v);
+            }
+            const redirectUri = body.get("redirect_uri");
+            if (body.get("grant_type") === "authorization_code" && redirectUri && isLoopbackRedirect(redirectUri)) {
+                body.set("redirect_uri", relayCallback(req));
+            }
+            try {
+                const cognito = await getCognitoMetadata();
+                const headers: Record<string, string> = { "Content-Type": "application/x-www-form-urlencoded" };
+                if (req.headers.authorization) headers.Authorization = req.headers.authorization;
+                const upstream = await fetch(String(cognito.token_endpoint), { method: "POST", headers, body: body.toString() });
+                res.status(upstream.status);
+                res.setHeader("Content-Type", upstream.headers.get("content-type") ?? "application/json");
+                res.setHeader("Cache-Control", "no-store");
+                res.send(await upstream.text());
+            } catch (err) {
+                log("error", "Token relay failed", { error: err instanceof Error ? err.message : String(err) });
+                res.status(502).json({ error: "temporarily_unavailable" });
+            }
         });
     }
 
