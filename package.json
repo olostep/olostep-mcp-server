@@ -13,7 +13,8 @@
     "prepublishOnly": "npm run build",
     "validate-server-json": "node scripts/validate-schema.mjs",
     "test:descriptions": "node tests/check-descriptions.mjs",
-    "test:e2e": "node tests/e2e.mjs"
+    "test:e2e": "node tests/e2e.mjs",
+    "test:oauth-relay": "node tests/oauth-relay.mjs"
   },
   "files": [
     "build/**/*"

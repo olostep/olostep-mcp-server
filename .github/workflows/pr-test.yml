@@ -35,6 +35,8 @@ jobs:
         run: node tests/smoke.mjs stdio --module ./build/index.js --no-real
       - name: Description goldens
         run: npm run test:descriptions
+      - name: OAuth loopback relay
+        run: npm run test:oauth-relay
 
   integration-test:
     name: Integration test (real API, stdio)
