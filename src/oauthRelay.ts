@@ -36,6 +36,7 @@ export function packState(redirectUri: string, clientState: string, key: string,
 }
 
 export function unpackState(state: string, key: string, now = Date.now()): { redirectUri: string; clientState: string } | null {
+    if (state.length > 4096) return null;
     const dot = state.lastIndexOf(".");
     if (dot <= 0) return null;
     const payload = state.slice(0, dot);

@@ -6,7 +6,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import fetch from "node-fetch";
-import { createHash } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { isLoopbackRedirect, packState, unpackState } from "./oauthRelay.js";
 import { getWebpageMarkdown } from "./tools/getWebpageMarkdown.js";
 import { getWebsiteMap } from "./tools/getWebsiteURLs.js";
@@ -48,7 +48,10 @@ const REGISTER_ENABLED = OAUTH_ENABLED && REGISTER_CLIENT_ID.length > 0 && REGIS
 // When on, login and token requests go through this server, which passes them to
 // Cognito unchanged for fixed callbacks and relays loopback ones.
 const RELAY_ENABLED = REGISTER_ENABLED && REGISTER_CLIENT_SECRET.length > 0 && process.env.MCP_OAUTH_RELAY_LOOPBACK === "true";
-const RELAY_KEY = createHash("sha256").update(`loopback-relay:${REGISTER_CLIENT_SECRET}`).digest("hex");
+// Signs relay state. Must not come from the client secret, which /register hands
+// out. Falls back to a per-process key, which is fine while one task runs; set
+// MCP_OAUTH_RELAY_SECRET before running more than one.
+const RELAY_KEY = (process.env.MCP_OAUTH_RELAY_SECRET ?? "").trim() || randomBytes(32).toString("hex");
 
 let cognitoMetadata: Record<string, unknown> | null = null;
 
@@ -354,6 +357,14 @@ async function startHttp() {
             const body = new URLSearchParams();
             for (const [k, v] of Object.entries(req.body ?? {})) {
                 if (typeof v === "string") body.set(k, v);
+            }
+            // Only our own client goes through here, so this can't be used as a general Cognito proxy.
+            let clientId = body.get("client_id");
+            const basic = req.headers.authorization?.startsWith("Basic ") ? req.headers.authorization.slice(6) : "";
+            if (!clientId && basic) clientId = decodeURIComponent(Buffer.from(basic, "base64").toString("utf8").split(":")[0] ?? "");
+            if (clientId !== REGISTER_CLIENT_ID) {
+                res.status(401).json({ error: "invalid_client" });
+                return;
             }
             const redirectUri = body.get("redirect_uri");
             if (body.get("grant_type") === "authorization_code" && redirectUri && isLoopbackRedirect(redirectUri)) {

@@ -132,6 +132,26 @@ try {
 
   await token({ grant_type: "refresh_token", refresh_token: "rt", client_id: CLIENT_ID });
   check("refresh token passes through", lastTokenForm?.grant_type === "refresh_token" && lastTokenForm?.refresh_token === "rt");
+
+  lastTokenForm = null;
+  r = await token({ grant_type: "refresh_token", refresh_token: "rt", client_id: "someone-else" });
+  check("token for another client rejected", r.status === 401 && lastTokenForm === null);
+  r = await token({ grant_type: "refresh_token", refresh_token: "rt" });
+  check("token without client rejected", r.status === 401);
+  r = await fetch(`${SERVER}/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: "Basic " + Buffer.from(`${CLIENT_ID}:test-secret`).toString("base64") },
+    body: "grant_type=refresh_token&refresh_token=rt",
+  });
+  check("token with Basic auth for our client works", r.status === 200);
+
+  // The client secret is public via /register, so it must not be usable to forge state.
+  const { packState } = await import("../build/oauthRelay.js");
+  const { createHash } = await import("node:crypto");
+  const guessedKey = createHash("sha256").update("loopback-relay:test-secret").digest("hex");
+  const forged = packState("http://127.0.0.1:9/", "x", guessedKey);
+  check("state signed with the client secret is rejected", (await get(`/oauth/callback?code=x&state=${encodeURIComponent(forged)}`)).status === 400);
+  check("oversized state rejected", (await get(`/oauth/callback?code=x&state=${"a".repeat(5000)}.b`)).status === 400);
 } finally {
   server.kill();
 }
