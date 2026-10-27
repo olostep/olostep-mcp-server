@@ -298,6 +298,50 @@ Add this to your `.vscode/mcp.json`:
 }
 ```
 
+### GitHub Copilot CLI
+
+Inside Copilot CLI, run `/mcp add` and enter:
+
+- **Name:** `olostep`
+- **Type:** HTTP
+- **URL:** `https://mcp.olostep.com/mcp`
+- **Headers:** leave empty
+
+Save with `Ctrl+S`, then sign in with your Olostep account when prompted (OAuth). Check the connection with `/mcp show olostep`.
+
+This writes the following to `~/.copilot/mcp-config.json`:
+
+```json
+{
+  "mcpServers": {
+    "olostep": {
+      "type": "http",
+      "url": "https://mcp.olostep.com/mcp",
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+### Zed
+
+Add this to your Zed `settings.json`:
+
+```json
+{
+  "context_servers": {
+    "olostep": {
+      "url": "https://mcp.olostep.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY_HERE"
+      }
+    }
+  }
+}
+```
+
+**Alternative (extension):** the [Olostep Zed extension](https://github.com/olostep-api/olostep-zed) runs the local server and asks for your API key in Zed's setup screen.
+
 ### Metorial
 
 **Option 1: One-Click Installation (Recommended)**
