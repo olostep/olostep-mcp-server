@@ -18,6 +18,14 @@ import { getBatchResults } from "./tools/getBatchResults.js";
 import { createCrawl } from "./tools/createCrawl.js";
 import { getCrawlResults } from "./tools/getCrawlResults.js";
 import { createMap } from "./tools/createMap.js";
+import { createMonitor } from "./tools/createMonitor.js";
+import { listMonitors } from "./tools/listMonitors.js";
+import { getMonitor } from "./tools/getMonitor.js";
+import { updateMonitor } from "./tools/updateMonitor.js";
+import { pauseMonitor } from "./tools/pauseMonitor.js";
+import { resumeMonitor } from "./tools/resumeMonitor.js";
+import { deleteMonitor } from "./tools/deleteMonitor.js";
+import { getMonitorEvents } from "./tools/getMonitorEvents.js";
 
 dotenv.config();
 
@@ -106,6 +114,8 @@ const tools: AnyTool[] = [
     createMap, createCrawl, getCrawlResults, batchScrapeUrls, getBatchResults,
     answers, searchWeb, scrapeWebsite, getWebpageMarkdown,
     getWebsiteMap,
+    createMonitor, listMonitors, getMonitor, updateMonitor,
+    pauseMonitor, resumeMonitor, deleteMonitor, getMonitorEvents,
 ];
 
 // MCP tool annotations. Every tool must declare all three hints (some clients,
