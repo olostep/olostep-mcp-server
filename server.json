@@ -2,7 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.olostep/olostep-mcp-server",
   "title": "Olostep MCP Server",
-  "description": "Search, scrape, and crawl the web for AI agents. Batch scraping and answers with citations.",
+  "description": "Live web search, scraping and crawling API for AI. Get structured, LLM-ready data from any site.",
+  "websiteUrl": "https://www.olostep.com",
   "version": "1.0.17",
   "icon": "assets/logo.png",
   "packages": [

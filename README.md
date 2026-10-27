@@ -4,8 +4,11 @@
 [npm version](https://www.npmjs.com/package/olostep-mcp)
 [License: ISC](https://opensource.org/licenses/ISC)
 
-A Model Context Protocol (MCP) server implementation that integrates with [Olostep](https://olostep.com) for web scraping, content extraction, and search capabilities.
-To set up Olostep MCP Server, you need to have an API key. You can get the API key by signing up on the [Olostep website](https://olostep.com/auth).
+**Live web search, scraping and crawling API for AI. Get structured, LLM-ready data from any site. Scale to 1M requests in a single batch at low cost.**
+
+[Olostep](https://www.olostep.com) is web data infrastructure for AI. It provides live web search, scraping and crawling API to extract and structure data. This is the official Olostep Model Context Protocol (MCP) server, which gives any MCP-compatible AI agent those capabilities.
+
+Use the hosted server at `https://mcp.olostep.com/mcp` (sign in with OAuth, or use an API key), or run it locally with an API key from the [Olostep website](https://olostep.com/auth).
 
 ## Features
 
@@ -666,6 +669,14 @@ docker build -t olostep/mcp-server .
 # Run locally
 docker run -i --rm -e OLOSTEP_API_KEY="your-key" olostep/mcp-server
 ```
+
+## About Olostep
+
+[Olostep](https://www.olostep.com) is web data infrastructure for AI. It provides live web search, scraping and crawling API to extract and structure data, used in production by AI companies to give their agents fresh, LLM-ready web data at scale.
+
+- Website: https://www.olostep.com
+- Documentation: https://docs.olostep.com
+- Get an API key: https://olostep.com/auth
 
 ## License
 
