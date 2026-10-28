@@ -4,6 +4,10 @@
   "title": "Olostep MCP Server",
   "description": "Live web search, scraping and crawling API for AI. Get structured, LLM-ready data from any site.",
   "websiteUrl": "https://www.olostep.com",
+  "repository": {
+    "url": "https://github.com/olostep/olostep-mcp-server",
+    "source": "github"
+  },
   "version": "1.0.17",
   "icon": "assets/logo.png",
   "packages": [
