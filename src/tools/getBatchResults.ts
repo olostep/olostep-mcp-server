@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Headers } from "node-fetch";
 import fetch from "node-fetch";
 
-const OLOSTEP_API_URL = "https://api.olostep.com/v1";
+const OLOSTEP_API_URL = process.env.OLOSTEP_API_URL ?? "https://api.olostep.com/v1";
 
 interface BatchStatusResponse {
 	id?: string;
@@ -28,7 +28,7 @@ interface RetrieveResponse {
 export const getBatchResults = {
 	name: "get_batch_results",
 	description:
-		"Retrieve the status and scraped content for a batch job. Pass the batch_id returned by batch_scrape_urls. If the batch is completed, returns the scraped content for each URL. If still in_progress, returns the current status so you can call again later.",
+		"Retrieve the status and scraped content for a batch job. Pass the batch_id returned by batch_scrape_urls. If the batch is completed, returns the scraped content for each URL, up to `items_limit` per call. When `has_more` is true, call again with `next_cursor` to get the next pages. If still in_progress, returns the current status so you can call again later.",
 	schema: {
 		batch_id: z
 			.string()
@@ -44,17 +44,25 @@ export const getBatchResults = {
 			.min(1)
 			.max(100)
 			.default(20)
-			.describe("Max number of items to retrieve content for (1-100). Default: 20."),
+			.describe("Max number of items to retrieve content for per call (1-100). Default: 20."),
+		cursor: z
+			.number()
+			.int()
+			.min(0)
+			.default(0)
+			.describe("Pagination cursor. Pass next_cursor from the previous result to get the next pages. Default: 0 (first page)."),
 	},
 	handler: async (
 		{
 			batch_id,
 			formats,
 			items_limit,
+			cursor,
 		}: {
 			batch_id: string;
 			formats?: string[];
 			items_limit?: number;
+			cursor?: number;
 		},
 		apiKey: string,
 	) => {
@@ -101,7 +109,7 @@ export const getBatchResults = {
 
 			const limit = items_limit ?? 20;
 			const itemsRes = await fetch(
-				`${OLOSTEP_API_URL}/batches/${encodeURIComponent(batch_id)}/items?cursor=0&limit=${limit}`,
+				`${OLOSTEP_API_URL}/batches/${encodeURIComponent(batch_id)}/items?cursor=${cursor ?? 0}&limit=${limit}`,
 				{ method: "GET", headers },
 			);
 
@@ -118,11 +126,14 @@ export const getBatchResults = {
 				};
 			}
 
-			const itemsData = (await itemsRes.json()) as { items?: BatchItem[]; cursor?: number };
+			const itemsData = (await itemsRes.json()) as { items?: BatchItem[]; cursor?: number | null };
 			const items = itemsData.items ?? [];
 
 			const retrieveFormats = (formats && formats.length > 0) ? formats : ["markdown"];
 			const formatsParam = retrieveFormats.map(f => `formats[]=${encodeURIComponent(f)}`).join("&");
+
+			// The API returns a cursor until the listing is exhausted, which can end on an empty page.
+			const hasMore = items.length > 0 && itemsData.cursor !== undefined && itemsData.cursor !== null;
 
 			const results = await Promise.all(
 				items.map(async (item) => {
@@ -162,7 +173,8 @@ export const getBatchResults = {
 						status: "completed",
 						total_urls: status.total_urls,
 						items_returned: results.length,
-						has_more: itemsData.cursor !== undefined,
+						has_more: hasMore,
+						...(hasMore && { next_cursor: itemsData.cursor }),
 						items: results,
 					}, null, 2),
 				}],

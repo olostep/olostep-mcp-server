@@ -1,7 +1,7 @@
 {
   "name": "olostep-mcp",
   "version": "1.0.17",
-  "description": "Live web search, scraping and crawling API for AI. Get structured, LLM-ready data from any site. Scale to 1M requests in a single batch at low cost.",
+  "description": "Live web search, scraping and crawling API for AI. Get structured, LLM-ready data from any site. Scale to 1M requests with 10 parallel batches at low cost.",
   "type": "module",
   "mcpName": "io.github.olostep/olostep-mcp-server",
   "bin": {
@@ -14,7 +14,8 @@
     "validate-server-json": "node scripts/validate-schema.mjs",
     "test:descriptions": "node tests/check-descriptions.mjs",
     "test:e2e": "node tests/e2e.mjs",
-    "test:oauth-relay": "node tests/oauth-relay.mjs"
+    "test:oauth-relay": "node tests/oauth-relay.mjs",
+    "test:paging": "node --test tests/paging.test.mjs"
   },
   "files": [
     "build/**/*"

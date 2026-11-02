@@ -2,6 +2,19 @@
 
 All notable changes to the Olostep MCP Server will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- `get_batch_results` takes a `cursor` and returns `next_cursor`, so batches larger than one call can be read in full.
+
+### Changed
+- `batch_scrape_urls` now accepts up to 100k URLs, matching the Olostep API.
+- Updated the batch wording and tagline: scale to 1M requests with 10 parallel batches.
+
+### Fixed
+- `get_batch_results` always read from the start of a batch, so items past the first call could not be retrieved.
+- `has_more` on `get_batch_results` and `get_crawl_results` is now `false` once an empty page is reached.
+
 ## [1.0.13] - 2026-04-21
 
 ### Added

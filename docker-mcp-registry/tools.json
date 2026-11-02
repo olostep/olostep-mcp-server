@@ -70,7 +70,7 @@
   },
   {
     "name": "batch_scrape_urls",
-    "description": "Scrape up to 10k URLs at the same time. Perfect for large-scale data extraction",
+    "description": "Scrape up to 100k URLs in one batch. Perfect for large-scale data extraction",
     "arguments": [
       {
         "name": "urls_to_scrape",
@@ -127,7 +127,13 @@
       {
         "name": "items_limit",
         "type": "number",
-        "desc": "Max number of items to retrieve content for (1-100). Default: 20",
+        "desc": "Max number of items to retrieve content for per call (1-100). Default: 20",
+        "optional": true
+      },
+      {
+        "name": "cursor",
+        "type": "number",
+        "desc": "Pass next_cursor from the previous result to get the next pages. Default: 0",
         "optional": true
       }
     ]

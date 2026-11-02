@@ -13,9 +13,10 @@ export interface BatchScrapeRequestUrl {
 export const batchScrapeUrls = {
 	name: "batch_scrape_urls",
 	description:
-    "Scrape a known list of URLs (up to 10,000) in one async job, for example URLs from a CSV or from search results. " +
+    "Scrape a known list of URLs (up to 100k) in one async job, for example URLs from a CSV or from search results. " +
     "Waits up to `wait_for_completion_seconds` (default 45) and returns the scraped content when the batch finishes in that time. " +
-    "Larger batches (usually 5-8 min) return a batch_id instead, and `get_batch_results` returns their content once done.",
+    "Larger batches (usually 5-8 min) return a batch_id instead, and `get_batch_results` returns their content once done. " +
+    "Results come back a set at a time: use `next_cursor` with `get_batch_results` to get the remaining pages.",
 	schema: {
 		urls: z
 			.array(
@@ -25,7 +26,7 @@ export const batchScrapeUrls = {
 				]),
 			)
 			.min(1)
-			.max(10000)
+			.max(100000)
 			.optional()
 			.describe('Array of URLs to scrape — plain URL strings, or objects with "url" and optional "custom_id".'),
 		urls_to_scrape: z
@@ -36,7 +37,7 @@ export const batchScrapeUrls = {
 				}),
 			)
 			.min(1)
-			.max(10000)
+			.max(100000)
 			.optional()
 			.describe('Alias for `urls`.'),
 		output_format: z

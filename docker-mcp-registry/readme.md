@@ -6,7 +6,7 @@ Search the web, extract data from websites as markdown, and discover URLs for si
 
 - **Web Scraping**: Extract content from any URL in HTML, Markdown, JSON, or Plain Text
 - **AI-Powered Answers**: Get answers with citations and optional JSON-shaped outputs
-- **Batch Processing**: Scrape up to 10,000 URLs simultaneously
+- **Batch Processing**: Scrape up to 100k URLs in one batch
 - **Site Crawling**: Autonomously discover and scrape entire websites
 - **URL Discovery**: Map website structure with include/exclude filters
 - **Geo-targeting**: Route requests through specific countries
