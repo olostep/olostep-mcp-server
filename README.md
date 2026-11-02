@@ -4,18 +4,27 @@
 [npm version](https://www.npmjs.com/package/olostep-mcp)
 [License: ISC](https://opensource.org/licenses/ISC)
 
-**Live web search, scraping and crawling API for AI. Get structured, LLM-ready data from any site. Scale to 1M requests in a single batch at low cost.**
+**Live web search, scraping and crawling API for AI. Get structured, LLM-ready data from any site. Scale to 1M requests with 10 parallel batches at low cost.**
 
-[Olostep](https://www.olostep.com) is web data infrastructure for AI. It provides live web search, scraping and crawling API to extract and structure data. This is the official Olostep Model Context Protocol (MCP) server, which gives any MCP-compatible AI agent those capabilities.
+[Olostep](https://www.olostep.com) is web data infrastructure for AI agents and enterprise AI workflows. Its APIs provide live web search, scraping and crawling to extract, clean and structure data from the web. This is the official Olostep Model Context Protocol (MCP) server, which gives any MCP-compatible AI agent those capabilities.
 
 Use the hosted server at `https://mcp.olostep.com/mcp` (sign in with OAuth, or use an API key), or run it locally with an API key from the [Olostep website](https://olostep.com/auth).
+
+## Why Olostep
+
+- Web data infrastructure for developers and enterprises
+- Scales to hundreds of millions to billions of requests per customer per month
+- The most performant, reliable and cost-effective API on the market
+- Used by the fastest-growing AI companies
+
+From extracting data from a handful of URLs to crawling hundreds of millions of pages, Olostep gives developers and AI companies reliable, scalable and highly cost-effective access to clean, structured web data.
 
 ## Features
 
 - Scrape website content in HTML, Markdown, JSON or Plain Text (with optional parsers)
 - Parser-based web search with structured results
 - AI Answers with citations and optional JSON-shaped outputs
-- Batch scraping of up to 10k URLs
+- Batch scraping of up to 100k URLs
 - Autonomous site crawling from a start URL
 - Website URL discovery and mapping (with include/exclude filters)
 - Country-specific request routing for geo-targeted content
@@ -489,7 +498,7 @@ Search the web and return AI-powered answers in the JSON structure you want, wit
 
 ### 4. Batch Scrape URLs (`batch_scrape_urls`)
 
-Scrape up to 10k URLs at the same time. Perfect for large-scale data extraction.
+Scrape up to 100k URLs in one batch. Perfect for large-scale data extraction. New accounts start at 100 URLs per batch, and info@olostep.com can lift this.
 
 ```json
 {
@@ -637,6 +646,10 @@ Retrieve the results of a previously submitted batch scrape job using its `batch
 #### Parameters:
 
 - `batch_id`: The batch ID returned from `batch_scrape_urls` (required)
+- `items_limit`: Max items to retrieve content for per call, 1–100 (default: 20)
+- `cursor`: Pass `next_cursor` from the previous result to get the next pages (default: 0)
+
+Large batches return their pages a set at a time. When `has_more` is `true`, call again with `next_cursor` until you have every page.
 
 #### Response includes:
 

@@ -20,7 +20,7 @@ Get your free API key at [olostep.com/auth](https://olostep.com/auth)
 | `scrape_website` | Extract content from URLs (HTML, Markdown, JSON, Text) |
 | `search_web` | Web search with structured results |
 | `answers` | AI-powered answers with sources and citations |
-| `batch_scrape_urls` | Batch processing up to 10,000 URLs |
+| `batch_scrape_urls` | Batch processing up to 100k URLs |
 | `create_crawl` | Autonomous website crawling |
 | `create_map` | Website URL discovery and mapping |
 

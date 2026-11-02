@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Headers } from "node-fetch";
 import fetch from "node-fetch";
 
-const OLOSTEP_API_URL = "https://api.olostep.com/v1";
+const OLOSTEP_API_URL = process.env.OLOSTEP_API_URL ?? "https://api.olostep.com/v1";
 
 interface CrawlStatusResponse {
 	id?: string;
@@ -157,6 +157,9 @@ export const getCrawlResults = {
 			const retrieveFormats = (formats && formats.length > 0) ? formats : ["markdown"];
 			const formatsParam = retrieveFormats.map(f => `formats[]=${encodeURIComponent(f)}`).join("&");
 
+			// The API returns a cursor until the listing is exhausted, which can end on an empty page.
+			const hasMore = pages.length > 0 && pagesData.cursor !== undefined && pagesData.cursor !== null;
+
 			const results = await Promise.all(
 				pages.map(async (page) => {
 					if (!page.retrieve_id) {
@@ -194,8 +197,8 @@ export const getCrawlResults = {
 						crawl_id: resolvedId,
 						status: "completed",
 						pages_returned: results.length,
-						next_cursor: pagesData.cursor,
-						has_more: pagesData.cursor !== undefined,
+						has_more: hasMore,
+						...(hasMore && { next_cursor: pagesData.cursor }),
 						pages: results,
 					}, null, 2),
 				}],
