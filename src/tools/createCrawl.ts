@@ -3,7 +3,7 @@ import { Headers } from "node-fetch";
 import fetch from "node-fetch";
 import { getCrawlResults } from "./getCrawlResults.js";
 
-const OLOSTEP_CRAWL_API_URL = "https://api.olostep.com/v1/crawls";
+const OLOSTEP_CRAWL_API_URL = `${process.env.OLOSTEP_API_URL ?? "https://api.olostep.com/v1"}/crawls`;
 
 export interface OlostepCrawlResponse {
 	id?: string;
@@ -123,7 +123,8 @@ export const createCrawl = {
 						{ crawl_id: crawlId, formats: [output_format], items_limit: Math.min(max_pages ?? 10, 20) },
 						apiKey,
 					);
-					if (res.isError) break;
+					// A failed crawl or status check won't recover by waiting longer.
+					if ("isError" in res && res.isError) return res;
 					let status = "";
 					try { status = String(JSON.parse(res.content[0].text).status ?? ""); } catch { /* keep polling */ }
 					if (status === "completed") return res;

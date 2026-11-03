@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Headers } from "node-fetch";
 import fetch from "node-fetch";
+import { isRunning, jobEnded } from "./jobStatus.js";
 
 const OLOSTEP_API_URL = process.env.OLOSTEP_API_URL ?? "https://api.olostep.com/v1";
 
@@ -93,6 +94,7 @@ export const getBatchResults = {
 			const batchStatus = (status.status || "").toLowerCase();
 
 			if (batchStatus !== "completed") {
+				if (!isRunning(batchStatus)) return jobEnded("batch", { batch_id: status.id || status.batch_id, ...status });
 				return {
 					content: [{
 						type: "text",
@@ -115,12 +117,13 @@ export const getBatchResults = {
 
 			if (!itemsRes.ok) {
 				return {
+					isError: true,
 					content: [{
 						type: "text",
 						text: JSON.stringify({
 							batch_id: status.id || status.batch_id,
 							status: "completed",
-							message: "Batch completed but failed to fetch items.",
+							message: `Batch completed but fetching its items failed: ${itemsRes.status} ${itemsRes.statusText}. Call get_batch_results again to retry.`,
 						}, null, 2),
 					}],
 				};
