@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Headers } from "node-fetch";
 import fetch from "node-fetch";
-import { isRunning, jobEnded } from "./jobStatus.js";
+import { isRunning, unexpectedStatus } from "./jobStatus.js";
 
 const OLOSTEP_API_URL = process.env.OLOSTEP_API_URL ?? "https://api.olostep.com/v1";
 
@@ -112,7 +112,7 @@ export const getCrawlResults = {
 			const resolvedId = status.id || status.crawl_id || crawl_id;
 
 			if (crawlStatus !== "completed") {
-				if (!isRunning(crawlStatus)) return jobEnded("crawl", { crawl_id: resolvedId, ...status });
+				if (!isRunning(crawlStatus)) return unexpectedStatus("crawl", { crawl_id: resolvedId, ...status });
 				return {
 					content: [{
 						type: "text",

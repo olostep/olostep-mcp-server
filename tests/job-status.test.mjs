@@ -33,6 +33,15 @@ const tools = async () => ({
 
 const text = (result) => result.content[0].text;
 
+// An unexpected status may still be running, so the agent should check the same job again
+// rather than start a new one.
+function assertCheckAgainLater(result, getter) {
+  assert.match(text(result), /unexpected status/);
+  assert.match(text(result), new RegExp(`check again later with ${getter}`));
+  assert.doesNotMatch(text(result), /Start a new/);
+  assert.doesNotMatch(text(result), /again in ~10 seconds/);
+}
+
 // Answers every job-status request with `job`, and everything else like a finished job with one page.
 function jobApi(job) {
   handler = (url, method) => {
@@ -51,7 +60,7 @@ test("get_crawl_results reports an unexpected crawl status as an error with the 
   assert.equal(result.isError, true);
   assert.match(text(result), /"status": "failed"/);
   assert.match(text(result), /start_url could not be reached/);
-  assert.doesNotMatch(text(result), /again in ~10 seconds/);
+  assertCheckAgainLater(result, "get_crawl_results");
 });
 
 test("get_batch_results reports an unexpected batch status as an error with the API's details", async () => {
@@ -61,7 +70,7 @@ test("get_batch_results reports an unexpected batch status as an error with the 
   assert.equal(result.isError, true);
   assert.match(text(result), /"status": "failed"/);
   assert.match(text(result), /not enough resources/);
-  assert.doesNotMatch(text(result), /again in ~10 seconds/);
+  assertCheckAgainLater(result, "get_batch_results");
 });
 
 test("any status other than in_progress or completed ends the job", async () => {
@@ -153,6 +162,7 @@ test("create_crawl stops waiting on an unexpected status", async () => {
   assert.equal(result.isError, true);
   assert.match(text(result), /"status": "failed"/);
   assert.doesNotMatch(text(result), /still running/);
+  assertCheckAgainLater(result, "get_crawl_results");
 });
 
 test("create_crawl reports a failed status check with its HTTP status and the crawl id", async () => {
@@ -176,6 +186,7 @@ test("batch_scrape_urls stops waiting on an unexpected status", async () => {
   assert.equal(result.isError, true);
   assert.match(text(result), /"status": "failed"/);
   assert.match(text(result), /not enough resources/);
+  assertCheckAgainLater(result, "get_batch_results");
 });
 
 test("batch_scrape_urls reports a failed status check with its HTTP status and the batch id", async () => {

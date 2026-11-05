@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Headers } from "node-fetch";
 import fetch from "node-fetch";
-import { isRunning, jobEnded } from "./jobStatus.js";
+import { isRunning, unexpectedStatus } from "./jobStatus.js";
 
 const OLOSTEP_API_URL = process.env.OLOSTEP_API_URL ?? "https://api.olostep.com/v1";
 
@@ -94,7 +94,7 @@ export const getBatchResults = {
 			const batchStatus = (status.status || "").toLowerCase();
 
 			if (batchStatus !== "completed") {
-				if (!isRunning(batchStatus)) return jobEnded("batch", { batch_id: status.id || status.batch_id, ...status });
+				if (!isRunning(batchStatus)) return unexpectedStatus("batch", { batch_id: status.id || status.batch_id, ...status });
 				return {
 					content: [{
 						type: "text",
