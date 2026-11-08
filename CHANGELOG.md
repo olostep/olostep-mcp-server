@@ -4,6 +4,8 @@ All notable changes to the Olostep MCP Server will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.20] - 2026-11-08
+
 ### Added
 - `get_batch_results` takes a `cursor` and returns `next_cursor`, so batches larger than one call can be read in full.
 
