@@ -14,6 +14,8 @@ All notable changes to the Olostep MCP Server will be documented in this file.
 ### Fixed
 - `get_batch_results` always read from the start of a batch, so items past the first call could not be retrieved.
 - `has_more` on `get_batch_results` and `get_crawl_results` is now `false` once an empty page is reached.
+- If a status check failed (e.g. 401 or 500) while `create_crawl` or `batch_scrape_urls` was waiting, the error was dropped and the job was reported as still running. It now returns the HTTP status and the job id. Page and item listing failures after a job completes are also errors with their HTTP status.
+- A crawl or batch status other than `in_progress` or `completed` is now an error instead of "call again in ~10 seconds", so an unexpected status can't leave an agent polling forever.
 
 ## [1.0.13] - 2026-04-21
 

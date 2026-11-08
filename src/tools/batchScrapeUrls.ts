@@ -2,8 +2,9 @@ import { z } from "zod";
 import { Headers } from "node-fetch";
 import fetch from "node-fetch";
 import { getBatchResults } from "./getBatchResults.js";
+import { isRunning, unexpectedStatus } from "./jobStatus.js";
 
-const OLOSTEP_API_URL = "https://api.olostep.com/v1";
+const OLOSTEP_API_URL = process.env.OLOSTEP_API_URL ?? "https://api.olostep.com/v1";
 
 export interface BatchScrapeRequestUrl {
 	url: string;
@@ -146,7 +147,17 @@ export const batchScrapeUrls = {
 						`${OLOSTEP_API_URL}/batches/${encodeURIComponent(batchId)}`,
 						{ method: "GET", headers },
 					);
-					if (!statusRes.ok) break;
+					if (!statusRes.ok) {
+						let errorDetails: unknown = null;
+						try { errorDetails = await statusRes.json(); } catch { /* ignore */ }
+						return {
+							isError: true,
+							content: [{
+								type: "text",
+								text: `Olostep API Error: ${statusRes.status} ${statusRes.statusText} while checking batch "${batchId}". Details: ${JSON.stringify(errorDetails)}`,
+							}],
+						};
+					}
 
 					const statusData = (await statusRes.json()) as Record<string, unknown>;
 					const status = String(statusData.status || "").toLowerCase();
@@ -159,17 +170,7 @@ export const batchScrapeUrls = {
 							apiKey,
 						);
 					}
-					if (status === "failed") {
-						return {
-							content: [{
-								type: "text",
-								text: JSON.stringify({
-									...statusData,
-									message: "Batch failed.",
-								}, null, 2),
-							}],
-						};
-					}
+					if (!isRunning(status)) return unexpectedStatus("batch", statusData);
 				}
 
 				return {

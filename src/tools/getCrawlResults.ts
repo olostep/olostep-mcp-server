@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Headers } from "node-fetch";
 import fetch from "node-fetch";
+import { isRunning, unexpectedStatus } from "./jobStatus.js";
 
 const OLOSTEP_API_URL = process.env.OLOSTEP_API_URL ?? "https://api.olostep.com/v1";
 
@@ -101,7 +102,7 @@ export const getCrawlResults = {
 					isError: true,
 					content: [{
 						type: "text",
-						text: `Olostep API Error: ${statusRes.status} ${statusRes.statusText}. Details: ${JSON.stringify(errorDetails)}`,
+						text: `Olostep API Error: ${statusRes.status} ${statusRes.statusText} while checking crawl "${crawl_id}". Details: ${JSON.stringify(errorDetails)}`,
 					}],
 				};
 			}
@@ -111,6 +112,7 @@ export const getCrawlResults = {
 			const resolvedId = status.id || status.crawl_id || crawl_id;
 
 			if (crawlStatus !== "completed") {
+				if (!isRunning(crawlStatus)) return unexpectedStatus("crawl", { crawl_id: resolvedId, ...status });
 				return {
 					content: [{
 						type: "text",
@@ -140,12 +142,13 @@ export const getCrawlResults = {
 
 			if (!pagesRes.ok) {
 				return {
+					isError: true,
 					content: [{
 						type: "text",
 						text: JSON.stringify({
 							crawl_id: resolvedId,
 							status: "completed",
-							message: "Crawl completed but failed to list pages.",
+							message: `Crawl completed but listing its pages failed: ${pagesRes.status} ${pagesRes.statusText}. Call get_crawl_results again to retry.`,
 						}, null, 2),
 					}],
 				};
