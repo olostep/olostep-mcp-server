@@ -12,8 +12,8 @@ export interface OlostepMapApiResponse {
 export const getWebsiteMap = {
     name: "get_website_urls",
     description:
-    "Find URLs on a website that match a search query, ranked by relevance. " +
-    "Returns links only and does not scrape page content.",
+        "Deprecated: use create_map with search_query. Kept so existing callers keep working. " +
+        "Returns URLs on a website ranked by a search query.",
     schema: {
         url: z.string().url().describe("The URL of the website to map."),
         search_query: z.string().describe("The search query to sort URLs by."),

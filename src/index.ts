@@ -7,6 +7,7 @@ import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import fetch from "node-fetch";
 import { randomBytes } from "node:crypto";
+import { createRequire } from "node:module";
 import { isLoopbackRedirect, packState, unpackState } from "./oauthRelay.js";
 import { getWebpageMarkdown } from "./tools/getWebpageMarkdown.js";
 import { getWebsiteMap } from "./tools/getWebsiteURLs.js";
@@ -20,6 +21,36 @@ import { getCrawlResults } from "./tools/getCrawlResults.js";
 import { createMap } from "./tools/createMap.js";
 
 dotenv.config();
+
+// Report the real package version to clients (it was hard-coded to 1.0.0).
+// build/index.js reads ../package.json, which npm and both Dockerfiles ship.
+const SERVER_VERSION: string = (() => {
+    try {
+        return (createRequire(import.meta.url)("../package.json") as { version?: string }).version ?? "0.0.0";
+    } catch {
+        return "0.0.0";
+    }
+})();
+
+// Sent to the model on connect. Clients may show only the start, so the routing
+// rule comes first and fits in the first 512 characters.
+const SERVER_INSTRUCTIONS = [
+    "Olostep gives you live web data. Pick the tool by goal:",
+    "- Find pages on a topic, no URL yet: search_web.",
+    "- Read one known URL: scrape_website.",
+    "- A factual answer with sources: answers.",
+    "- List a site's URLs without their content: create_map.",
+    "- Content of many pages from one site: create_crawl.",
+    "- Content of a known list of URLs: batch_scrape_urls.",
+    "",
+    "create_crawl and batch_scrape_urls return the content if the job finishes within wait_for_completion_seconds; " +
+        "otherwise they return a crawl_id or batch_id. Fetch it with get_crawl_results or get_batch_results, and do not " +
+        "start a new job for the same URLs.",
+    "Page content is cut at 20,000 characters per page by default. A cut page says so and links to its full text; " +
+        "call scrape_website with a higher max_characters to read more.",
+    "For structured fields from a page, call scrape_website with output_format \"json\" and an llm_extract schema.",
+    "For a list of items on one page (latest posts, a price table), scrape that page rather than using answers.",
+].join("\n");
 
 // --- OAuth resource-server support (additive; dormant unless configured) ---
 // When MCP_OAUTH_AUTHORIZATION_SERVER_URL is set, this server advertises OAuth
@@ -108,25 +139,37 @@ const tools: AnyTool[] = [
     getWebsiteMap,
 ];
 
-// MCP tool annotations. Every tool must declare all three hints (some clients,
-// e.g. ChatGPT Apps, reject tools that omit any of them). All Olostep tools hit
-// the live web (open world) and none delete or overwrite data (never
-// destructive). Most only read; the two that start jobs are writes. Default is
-// read-only so any new tool is valid out of the box — list writers explicitly.
-const WRITE_TOOLS = new Set(["create_crawl", "batch_scrape_urls"]);
+// Older duplicates of scrape_website and create_map. They stay registered so
+// existing callers keep working, but tools/list leaves them out so models choose
+// between fewer, clearer tools.
+const HIDDEN_TOOLS = new Set(["get_webpage_content", "get_website_urls"]);
+
+// Safety hints, set explicitly for every tool (ChatGPT Apps rejects tools that
+// omit any). Every tool only reads public web pages: none changes or deletes the
+// user's data, so all are read-only and non-destructive, and all reach the open
+// web. create_crawl and batch_scrape_urls start a new job (and spend credits)
+// on each call, so they are not idempotent.
+type Hints = { readOnlyHint: boolean; destructiveHint: boolean; idempotentHint: boolean; openWorldHint: boolean };
+const READS: Hints = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
+const STARTS_JOB: Hints = { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true };
+const TOOL_HINTS: Record<string, Hints> = {
+    answers: READS,
+    search_web: READS,
+    scrape_website: READS,
+    create_map: READS,
+    create_crawl: STARTS_JOB,
+    get_crawl_results: READS,
+    batch_scrape_urls: STARTS_JOB,
+    get_batch_results: READS,
+    get_webpage_content: READS,
+    get_website_urls: READS,
+};
+
 function annotationsFor(name: string) {
-    const isWrite = WRITE_TOOLS.has(name);
-    return {
-        // Claude's directory reads the human-readable title from annotations.
-        title: titleFor(name),
-        readOnlyHint: !isWrite,
-        destructiveHint: false,
-        // Reads are idempotent (same call, same result, no extra effect). The two
-        // writers start a NEW job each call, so they are not idempotent. OpenAI's
-        // submission check expects all four hint fields present.
-        idempotentHint: !isWrite,
-        openWorldHint: true,
-    };
+    const hints = TOOL_HINTS[name];
+    if (!hints) throw new Error(`Tool ${name} has no safety hints in TOOL_HINTS`);
+    // Claude's directory reads the human-readable title from annotations.
+    return { title: titleFor(name), ...hints };
 }
 
 // Human-readable title from the snake_case tool name (e.g. "create_map" ->
@@ -136,7 +179,7 @@ function titleFor(name: string): string {
 }
 
 function createMcpServer(apiKey: string, orbitKey?: string) {
-    const server = new McpServer({ name: "olostep", version: "1.0.0" });
+    const server = new McpServer({ name: "olostep", version: SERVER_VERSION }, { instructions: SERVER_INSTRUCTIONS });
 
     for (const tool of tools) {
         const registered = server.registerTool(
@@ -173,6 +216,7 @@ function createMcpServer(apiKey: string, orbitKey?: string) {
                         delete t.inputSchema.$schema;
                     }
                 }
+                (result as { tools: unknown[] }).tools = listTools.filter(t => !HIDDEN_TOOLS.has(t?.name));
             }
             return result;
         });

@@ -11,6 +11,7 @@
 // Exit codes: 0 = all checks pass, 1 = any check failed, 2 = bad args.
 
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
 import process from "node:process";
 
 // ---------- Transports ----------
@@ -203,16 +204,29 @@ async function main() {
       clientInfo: { name: "olostep-smoke", version: "1" },
     });
     if (!r?.serverInfo?.name) throw new Error("no serverInfo in response");
+    const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+    if (r.serverInfo.version !== version) throw new Error(`serverInfo.version = ${r.serverInfo.version}, expected ${version}`);
+    if (!String(r.instructions || "").includes("scrape_website")) throw new Error("no routing instructions in initialize");
   });
 
   await transport.notify("notifications/initialized", {});
 
   let tools;
-  await check("tools/list returns 10 tools", async () => {
+  // get_webpage_content and get_website_urls are hidden duplicates: callable, not listed.
+  await check("tools/list returns 8 tools", async () => {
     const r = await transport.request("tools/list", {});
     tools = r?.tools || [];
-    if (tools.length !== 10) {
-      throw new Error(`got ${tools.length} tools, expected 10`);
+    if (tools.length !== 8) {
+      throw new Error(`got ${tools.length} tools, expected 8`);
+    }
+  });
+
+  await check("schema: every tool sets all four safety hints", () => {
+    for (const t of tools) {
+      const a = t.annotations || {};
+      for (const k of ["readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"]) {
+        if (typeof a[k] !== "boolean") throw new Error(`tool ${t.name} has no ${k}`);
+      }
     }
   });
 
@@ -239,7 +253,6 @@ async function main() {
   await check("schema: expected tool set is present", () => {
     const expected = [
       "scrape_website",
-      "get_webpage_content",
       "search_web",
       "answers",
       "batch_scrape_urls",
@@ -247,7 +260,6 @@ async function main() {
       "create_crawl",
       "get_crawl_results",
       "create_map",
-      "get_website_urls",
     ];
     const got = new Set(tools.map((t) => t.name));
     const missing = expected.filter((n) => !got.has(n));

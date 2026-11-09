@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Headers } from 'node-fetch';
 import fetch from 'node-fetch';
+import { DEFAULT_MAX_CHARACTERS } from './pageContent.js';
 
 const OLOSTEP_SCRAPE_API_URL = 'https://api.olostep.com/v1/scrapes';
 
@@ -12,7 +13,8 @@ export interface OlostepScrapeApiResponse {
 
 export const getWebpageMarkdown = {
     name: "get_webpage_content",
-    description: "Retrieve content of a webpage in markdown",
+    description:
+        "Deprecated: use scrape_website. Kept so existing callers keep working. Returns a page's content as markdown.",
     schema: {
         url: z.string().url().optional().describe("The URL of the webpage to scrape."),
         url_to_scrape: z.string().url().optional().describe("Alias for `url`."),
@@ -57,11 +59,15 @@ export const getWebpageMarkdown = {
 
             const data = await response.json() as OlostepScrapeApiResponse;
 
-            if (data.result?.markdown_content) {
+            const markdown = data.result?.markdown_content;
+            if (markdown) {
+                const cut = markdown.length > DEFAULT_MAX_CHARACTERS;
                 return {
                     content: [{
                         type: "text",
-                        text: data.result.markdown_content
+                        text: cut
+                            ? `${markdown.slice(0, DEFAULT_MAX_CHARACTERS)}\n\n[Cut at ${DEFAULT_MAX_CHARACTERS} of ${markdown.length} characters. Call scrape_website with a higher max_characters for the rest.]`
+                            : markdown
                     }]
                 };
             } else {

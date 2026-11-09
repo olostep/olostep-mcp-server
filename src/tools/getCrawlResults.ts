@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Headers } from "node-fetch";
 import fetch from "node-fetch";
 import { isRunning, unexpectedStatus } from "./jobStatus.js";
+import { DEFAULT_MAX_CHARACTERS, shapePage } from "./pageContent.js";
 
 const OLOSTEP_API_URL = process.env.OLOSTEP_API_URL ?? "https://api.olostep.com/v1";
 
@@ -35,12 +36,19 @@ interface RetrieveResponse {
 	html_content?: string;
 	json_content?: unknown;
 	text_content?: string;
+	markdown_hosted_url?: string;
+	html_hosted_url?: string;
+	text_hosted_url?: string;
 }
 
 export const getCrawlResults = {
 	name: "get_crawl_results",
 	description:
-		"Retrieve the status and scraped pages for a crawl job started with create_crawl. While the crawl is in_progress it returns the current status, so call again after about 10 seconds. Once completed, it returns the discovered pages with their scraped content in the requested formats.",
+		"Use this to get the pages of a crawl started with create_crawl, using its crawl_id. " +
+		"While the crawl is in_progress it returns the status: call again in about 10 seconds. " +
+		"Once completed it returns each page's url, title and content, up to `items_limit` per call; " +
+		"when `has_more` is true, pass `next_cursor` for the rest. " +
+		"Do not start a new crawl to check on one that is still running.",
 	schema: {
 		crawl_id: z
 			.string()
@@ -67,6 +75,12 @@ export const getCrawlResults = {
 			.string()
 			.optional()
 			.describe("Optional filter to rank/select pages by relevance to a query."),
+		max_characters: z
+			.number()
+			.int()
+			.min(500)
+			.default(DEFAULT_MAX_CHARACTERS)
+			.describe(`Max characters of content per page (default ${DEFAULT_MAX_CHARACTERS}). Longer pages are cut and link to their full text.`),
 	},
 	handler: async (
 		{
@@ -75,12 +89,14 @@ export const getCrawlResults = {
 			items_limit,
 			cursor,
 			search_query,
+			max_characters,
 		}: {
 			crawl_id: string;
 			formats?: string[];
 			items_limit?: number;
 			cursor?: number;
 			search_query?: string;
+			max_characters?: number;
 		},
 		apiKey: string,
 	) => {
@@ -186,7 +202,7 @@ export const getCrawlResults = {
 						if (retrieveFormats.includes("html") && content.html_content) result.html_content = content.html_content;
 						if (retrieveFormats.includes("json") && content.json_content) result.json_content = content.json_content;
 						if (retrieveFormats.includes("text") && content.text_content) result.text_content = content.text_content;
-						return result;
+						return shapePage(result, { url: page.url, maxCharacters: max_characters, source: content as Record<string, unknown> });
 					} catch {
 						return { url: page.url, custom_id: page.custom_id, error: "Retrieve request failed" };
 					}

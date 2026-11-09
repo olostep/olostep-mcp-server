@@ -13,7 +13,10 @@ interface GoogleSearchResponse {
 export const searchWeb = {
 	name: "search_web",
 	description:
-		"Search the web for a given query and return structured results (non-AI, parser-based).",
+		"Use this when you need web pages on a topic and do not have a URL yet. " +
+		"Returns Google results: title, link and snippet for each, plus related searches. " +
+		"It does not read the pages: pass the links you need to scrape_website, or to batch_scrape_urls for many. " +
+		"For a direct factual answer with sources, use answers.",
 	schema: {
 		query: z.string().describe("Search query"),
 		country: z

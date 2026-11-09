@@ -106,7 +106,7 @@ test("in_progress jobs keep the same call-again message", async () => {
   }, null, 2));
 });
 
-test("completed jobs return the same output as before", async () => {
+test("completed jobs return each page with its url and title", async () => {
   const { getCrawlResults, getBatchResults } = await tools();
   jobApi({ id: "job_1", status: "completed", total_urls: 1 });
   const crawl = await getCrawlResults.handler({ crawl_id: "job_1" }, "key");
@@ -116,7 +116,7 @@ test("completed jobs return the same output as before", async () => {
     status: "completed",
     pages_returned: 1,
     has_more: false,
-    pages: [{ url: "https://a.com", markdown_content: "page" }],
+    pages: [{ url: "https://a.com", title: "page", markdown_content: "page" }],
   }, null, 2));
 
   const batch = await getBatchResults.handler({ batch_id: "job_1" }, "key");
@@ -127,7 +127,7 @@ test("completed jobs return the same output as before", async () => {
     total_urls: 1,
     items_returned: 1,
     has_more: false,
-    items: [{ url: "https://a.com", markdown_content: "page" }],
+    items: [{ url: "https://a.com", title: "page", markdown_content: "page" }],
   }, null, 2));
 });
 

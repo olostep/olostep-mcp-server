@@ -2,34 +2,28 @@
   "version": 1,
   "tools": {
     "answers": {
-      "description": "Answer a factual question using web search, optionally shaped into a flat JSON object of fields, with sources and citations. Suited to bounded, factual answers such as a company's founding year or a product's current price. Lists of items on a live page, such as the latest blog posts, come back more reliably from scraping that page."
+      "description": "Use this when the user asks a factual question the live web can answer in a sentence or a few fields, such as a company's founding year, a CEO's name or a product's current price. Searches and reads the pages itself and returns the answer with its source URLs, optionally as a flat JSON object of the fields you list in `json`. For a list of items from one page (latest blog posts, a price table), call scrape_website on that page instead."
     },
     "batch_scrape_urls": {
-      "description": "Scrape a known list of URLs (up to 100k) in one async job, for example URLs from a CSV or from search results. Waits up to `wait_for_completion_seconds` (default 45) and returns the scraped content when the batch finishes in that time. Larger batches (usually 5-8 min) return a batch_id instead, and `get_batch_results` returns their content once done. Results come back a set at a time: use `next_cursor` with `get_batch_results` to get the remaining pages."
+      "description": "Use this when you have a known list of URLs to scrape, such as URLs from a CSV or from search results (up to 100k in one batch). Waits up to `wait_for_completion_seconds` (default 45) and returns the content if the batch finishes in that time. Larger batches usually take 5-8 min and return a batch_id: get their content with get_batch_results, a set at a time, passing `next_cursor` for the rest. For one or a few URLs, scrape_website is faster; to discover a site's pages, use create_crawl."
     },
     "create_crawl": {
-      "description": "Crawl a website from a start URL: follows links on the same site and scrapes each page it finds, up to `max_pages`. Suited to getting many pages from one site, such as a docs section or a blog. Waits up to `wait_for_completion_seconds` (default 45) and returns the scraped pages when the crawl finishes in that time. Larger crawls return a crawl_id instead, and `get_crawl_results` returns their pages once done. Crawls and batches are separate resources, so a crawl_id works with `get_crawl_results`, not `get_batch_results`."
+      "description": "Use this when you need the content of many pages from one website, such as a docs section or a blog: it follows links from a start URL and scrapes each page it finds, up to `max_pages`. Waits up to `wait_for_completion_seconds` (default 45) and returns the pages if the crawl finishes in that time; otherwise returns a crawl_id to pass to get_crawl_results (not get_batch_results). For a known list of URLs use batch_scrape_urls; for one page use scrape_website."
     },
     "create_map": {
-      "description": "List the URLs on a website without scraping their content. Suited to showing a site's pages, mapping a site, or picking a subset of URLs to scrape. `create_crawl` both discovers and scrapes pages when their content is needed too."
+      "description": "Use this when you need the list of URLs on a website, not their content: to see a site's pages, find a section, or pick pages to scrape. Can rank URLs by `search_query` and filter them with glob patterns. Returns URLs only. To get the content of many pages from the site, use create_crawl."
     },
     "get_batch_results": {
-      "description": "Retrieve the status and scraped content for a batch job. Pass the batch_id returned by batch_scrape_urls. If the batch is completed, returns the scraped content for each URL, up to `items_limit` per call. When `has_more` is true, call again with `next_cursor` to get the next pages. If still in_progress, returns the current status so you can call again later."
+      "description": "Use this to get the content of a batch started with batch_scrape_urls, using its batch_id. While the batch is in_progress it returns the status: call again in about 10 seconds. Once completed it returns each URL's url, title and content, up to `items_limit` per call; when `has_more` is true, pass `next_cursor` for the rest. Do not start a new batch to check on one that is still running."
     },
     "get_crawl_results": {
-      "description": "Retrieve the status and scraped pages for a crawl job started with create_crawl. While the crawl is in_progress it returns the current status, so call again after about 10 seconds. Once completed, it returns the discovered pages with their scraped content in the requested formats."
-    },
-    "get_webpage_content": {
-      "description": "Retrieve content of a webpage in markdown"
-    },
-    "get_website_urls": {
-      "description": "Find URLs on a website that match a search query, ranked by relevance. Returns links only and does not scrape page content."
+      "description": "Use this to get the pages of a crawl started with create_crawl, using its crawl_id. While the crawl is in_progress it returns the status: call again in about 10 seconds. Once completed it returns each page's url, title and content, up to `items_limit` per call; when `has_more` is true, pass `next_cursor` for the rest. Do not start a new crawl to check on one that is still running."
     },
     "scrape_website": {
-      "description": "Extract content from a single URL. Supports multiple formats and JavaScript rendering."
+      "description": "Use this when you have a URL and need what is on the page. Returns the page as clean markdown (default), html or text, with its url and title, after rendering JavaScript. For structured fields, set output_format to \"json\" with an llm_extract schema or a parser. Long pages are cut at max_characters (default 20,000) with a link to the full text. For many known URLs use batch_scrape_urls; for many pages of one site use create_crawl."
     },
     "search_web": {
-      "description": "Search the web for a given query and return structured results (non-AI, parser-based)."
+      "description": "Use this when you need web pages on a topic and do not have a URL yet. Returns Google results: title, link and snippet for each, plus related searches. It does not read the pages: pass the links you need to scrape_website, or to batch_scrape_urls for many. For a direct factual answer with sources, use answers."
     }
   }
 }

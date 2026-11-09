@@ -4,7 +4,7 @@ These instructions are for AI agents (such as Cline) installing the Olostep MCP 
 
 ## What this server does
 
-Olostep gives the agent live web data through 10 tools: `scrape_website`, `get_webpage_content`, `search_web`, `answers`, `get_website_urls`, `create_map`, `batch_scrape_urls`, `get_batch_results`, `create_crawl`, and `get_crawl_results`.
+Olostep gives the agent live web data through 8 tools: `scrape_website`, `search_web`, `answers`, `create_map`, `batch_scrape_urls`, `get_batch_results`, `create_crawl`, and `get_crawl_results`.
 
 ## Prerequisites
 
@@ -48,8 +48,8 @@ If `npx` cannot be found on Windows, use `cmd` to launch it:
 
 ## Verify the installation
 
-1. Confirm the `olostep` server shows as connected with 10 tools.
-2. Call `get_webpage_content` with `{"url": "https://example.com"}`. The result should contain the text "Example Domain".
+1. Confirm the `olostep` server shows as connected with 8 tools.
+2. Call `scrape_website` with `{"url": "https://example.com"}`. The result should contain the text "Example Domain".
 
 ## Troubleshooting
 
