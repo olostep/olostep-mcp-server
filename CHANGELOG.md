@@ -4,6 +4,20 @@ All notable changes to the Olostep MCP Server will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Server instructions sent on connect: which tool to use for which goal, with the routing rule in the first 512 characters, plus how to follow up on crawl and batch jobs.
+- `max_characters` on `scrape_website`, `get_crawl_results` and `get_batch_results` (default 20,000 per page).
+- Every scraped page now comes back with its `url` and `title`.
+
+### Changed
+- Tool descriptions rewritten as "Use this when..." with when to use a sibling tool instead. `answers` no longer warns about lists; it points list-of-items tasks to `scrape_website`.
+- Page content longer than `max_characters` is cut, and the result lists the cut fields under `truncated` with the full length and a `full_text_url`. Before, a single page could return 70 KB or more.
+- `get_webpage_content` and `get_website_urls`, duplicates of `scrape_website` and `create_map`, are no longer listed in `tools/list`. Calls to them still work.
+- Safety hints are set explicitly per tool. `create_crawl` and `batch_scrape_urls` are now `readOnlyHint: true` like the other tools (they only read public web pages); they stay `idempotentHint: false` because each call starts a new job.
+
+### Fixed
+- The server reported version 1.0.0 to clients; it now reports the package version.
+
 ## [1.0.20] - 2026-11-08
 
 ### Added

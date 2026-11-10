@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Headers } from "node-fetch";
 import fetch from "node-fetch";
 import { isRunning, unexpectedStatus } from "./jobStatus.js";
+import { DEFAULT_MAX_CHARACTERS, shapePage } from "./pageContent.js";
 
 const OLOSTEP_API_URL = process.env.OLOSTEP_API_URL ?? "https://api.olostep.com/v1";
 
@@ -24,12 +25,19 @@ interface RetrieveResponse {
 	html_content?: string;
 	json_content?: unknown;
 	text_content?: string;
+	markdown_hosted_url?: string;
+	html_hosted_url?: string;
+	text_hosted_url?: string;
 }
 
 export const getBatchResults = {
 	name: "get_batch_results",
 	description:
-		"Retrieve the status and scraped content for a batch job. Pass the batch_id returned by batch_scrape_urls. If the batch is completed, returns the scraped content for each URL, up to `items_limit` per call. When `has_more` is true, call again with `next_cursor` to get the next pages. If still in_progress, returns the current status so you can call again later.",
+		"Use this to get the content of a batch started with batch_scrape_urls, using its batch_id. " +
+		"While the batch is in_progress it returns the status: call again in about 10 seconds. " +
+		"Once completed it returns each URL's url, title and content, up to `items_limit` per call; " +
+		"when `has_more` is true, pass `next_cursor` for the rest. " +
+		"Do not start a new batch to check on one that is still running.",
 	schema: {
 		batch_id: z
 			.string()
@@ -52,6 +60,12 @@ export const getBatchResults = {
 			.min(0)
 			.default(0)
 			.describe("Pagination cursor. Pass next_cursor from the previous result to get the next pages. Default: 0 (first page)."),
+		max_characters: z
+			.number()
+			.int()
+			.min(500)
+			.default(DEFAULT_MAX_CHARACTERS)
+			.describe(`Max characters of content per URL (default ${DEFAULT_MAX_CHARACTERS}). Longer pages are cut and link to their full text.`),
 	},
 	handler: async (
 		{
@@ -59,11 +73,13 @@ export const getBatchResults = {
 			formats,
 			items_limit,
 			cursor,
+			max_characters,
 		}: {
 			batch_id: string;
 			formats?: string[];
 			items_limit?: number;
 			cursor?: number;
+			max_characters?: number;
 		},
 		apiKey: string,
 	) => {
@@ -161,7 +177,7 @@ export const getBatchResults = {
 						if (retrieveFormats.includes("html") && content.html_content) result.html_content = content.html_content;
 						if (retrieveFormats.includes("json") && content.json_content) result.json_content = content.json_content;
 						if (retrieveFormats.includes("text") && content.text_content) result.text_content = content.text_content;
-						return result;
+						return shapePage(result, { url: item.url, maxCharacters: max_characters, source: content as Record<string, unknown> });
 					} catch {
 						return { custom_id: item.custom_id, url: item.url, error: "Retrieve request failed" };
 					}

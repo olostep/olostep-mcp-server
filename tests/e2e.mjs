@@ -33,9 +33,10 @@ const EXPECTED_TOOLS = [
   "answers",
   "search_web",
   "scrape_website",
-  "get_webpage_content",
-  "get_website_urls",
 ];
+
+// Hidden from tools/list but still callable, so older callers keep working.
+const HIDDEN_TOOLS = ["get_webpage_content", "get_website_urls"];
 
 const results = [];
 
@@ -116,10 +117,11 @@ async function main() {
     tools = listed.tools.map((t) => t.name).sort();
     const missing = EXPECTED_TOOLS.filter((n) => !tools.includes(n));
     const extra = tools.filter((n) => !EXPECTED_TOOLS.includes(n));
-    if (missing.length === 0 && tools.length >= 10) {
+    const listedHidden = HIDDEN_TOOLS.filter((n) => tools.includes(n));
+    if (missing.length === 0 && listedHidden.length === 0) {
       log("PASS", "list_tools", `${tools.length} tools`);
     } else {
-      log("FAIL", "list_tools", `missing=${missing.join(",")} extra=${extra.join(",")}`);
+      log("FAIL", "list_tools", `missing=${missing.join(",")} extra=${extra.join(",")} listedHidden=${listedHidden.join(",")}`);
     }
   } catch (e) {
     log("FAIL", "list_tools", e.message);

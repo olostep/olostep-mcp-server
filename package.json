@@ -16,7 +16,8 @@
     "test:e2e": "node tests/e2e.mjs",
     "test:oauth-relay": "node tests/oauth-relay.mjs",
     "test:paging": "node --test tests/paging.test.mjs",
-    "test:job-status": "node --test tests/job-status.test.mjs"
+    "test:job-status": "node --test tests/job-status.test.mjs",
+    "test:page-content": "node --test tests/page-content.test.mjs"
   },
   "files": [
     "build/**/*"

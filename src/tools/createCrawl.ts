@@ -21,9 +21,11 @@ export interface OlostepCrawlResponse {
 export const createCrawl = {
 	name: "create_crawl",
 	description:
-    "Crawl a website from a start URL: follows links on the same site and scrapes each page it finds, up to `max_pages`. Suited to getting many pages from one site, such as a docs section or a blog. " +
-    "Waits up to `wait_for_completion_seconds` (default 45) and returns the scraped pages when the crawl finishes in that time. Larger crawls return a crawl_id instead, and `get_crawl_results` returns their pages once done. " +
-    "Crawls and batches are separate resources, so a crawl_id works with `get_crawl_results`, not `get_batch_results`.",
+		"Use this when you need the content of many pages from one website, such as a docs section or a blog: " +
+		"it follows links from a start URL and scrapes each page it finds, up to `max_pages`. " +
+		"Waits up to `wait_for_completion_seconds` (default 45) and returns the pages if the crawl finishes in that time; " +
+		"otherwise returns a crawl_id to pass to get_crawl_results (not get_batch_results). " +
+		"For a known list of URLs use batch_scrape_urls; for one page use scrape_website.",
 	schema: {
 		url: z.string().url().optional().describe("Starting URL for the crawl."),
 		start_url: z.string().url().optional().describe("Alias for `url`."),

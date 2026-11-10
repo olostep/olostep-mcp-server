@@ -414,7 +414,7 @@ The Olostep tools will then be available in your Metorial AI chats.
 
 ### 1. Scrape Website (`scrape_website`)
 
-Extract content from a single URL. Supports multiple formats and JavaScript rendering.
+Use this when you have a URL and need what is on the page. Returns markdown (default), html or text with the page's `url` and `title`, after rendering JavaScript. Long pages are cut at `max_characters` (default 20,000) and link to their full text.
 
 ```json
 {
@@ -436,17 +436,22 @@ Extract content from a single URL. Supports multiple formats and JavaScript rend
 - `country`: Optional country code (e.g., US, GB, CA) for location-specific scraping
 - `wait_before_scraping`: Wait time in milliseconds before scraping (0-10000)
 - `parser`: Optional parser ID for specialized extraction
+- `max_characters`: Max characters of page content to return (default: 20000). Raise it to read more of a long page.
 
 #### Response (example):
 
+The page's `url` and `title` come first. When the content is longer than `max_characters`, it is cut and `truncated` gives the full length and a `full_text_url`.
+
 ```json
 {
-  "content": [
-    {
-      "type": "text",
-      "text": "{\n  \"id\": \"scrp_...\",\n  \"url\": \"https://example.com\",\n  \"markdown_content\": \"# ...\",\n  \"html_content\": null,\n  \"json_content\": null,\n  \"text_content\": null,\n  \"status\": \"succeeded\",\n  \"timestamp\": \"2025-11-14T12:34:56Z\",\n  \"screenshot_hosted_url\": null,\n  \"page_metadata\": { }\n}"
-    }
-  ]
+  "url": "https://en.wikipedia.org/wiki/Web_scraping",
+  "title": "Web scraping - Wikipedia",
+  "markdown_content": "Web scraping - Wikipedia ...",
+  "markdown_hosted_url": "https://olostep-storage.s3.us-east-1.amazonaws.com/markDown_....txt",
+  "truncated": [
+    { "field": "markdown_content", "returned_characters": 20000, "total_characters": 57235, "full_text_url": "https://olostep-storage.s3.us-east-1.amazonaws.com/markDown_....txt" }
+  ],
+  "truncation_note": "Content was cut at 20000 characters. ..."
 }
 ```
 
@@ -564,73 +569,7 @@ Get all URLs on a website. Extract all URLs for discovery and analysis.
 
 - `map_id`, `object`, `url`, `total_urls`, `urls`, `search_query`, `top_n`
 
-### 7. Get Webpage Content (`get_webpage_content`)
-
-Retrieves webpage content in clean markdown format with support for JavaScript rendering.
-
-```json
-{
-  "name": "get_webpage_content",
-  "arguments": {
-    "url_to_scrape": "https://example.com",
-    "wait_before_scraping": 1000,
-    "country": "US"
-  }
-}
-```
-
-#### Parameters:
-
-- `url_to_scrape`: The URL of the webpage to scrape (required)
-- `wait_before_scraping`: Time to wait in milliseconds before starting the scrape (default: 0)
-- `country`: Residential country to load the request from (e.g., US, CA, GB) (optional)
-
-#### Response:
-
-```json
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "# Example Website\n\nThis is the markdown content of the webpage..."
-    }
-  ]
-}
-```
-
-### 8. Get Website URLs (`get_website_urls`)
-
-Search and retrieve relevant URLs from a website, sorted by relevance to your query.
-
-```json
-{
-  "name": "get_website_urls",
-  "arguments": {
-    "url": "https://example.com",
-    "search_query": "your search term"
-  }
-}
-```
-
-#### Parameters:
-
-- `url`: The URL of the website to map (required)
-- `search_query`: The search query to sort URLs by (required)
-
-#### Response:
-
-```json
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "Found 42 URLs matching your query:\n\nhttps://example.com/page1\nhttps://example.com/page2\n..."
-    }
-  ]
-}
-```
-
-### 9. Get Batch Results (`get_batch_results`)
+### 7. Get Batch Results (`get_batch_results`)
 
 Retrieve the results of a previously submitted batch scrape job using its `batch_id`.
 
@@ -648,6 +587,7 @@ Retrieve the results of a previously submitted batch scrape job using its `batch
 - `batch_id`: The batch ID returned from `batch_scrape_urls` (required)
 - `items_limit`: Max items to retrieve content for per call, 1–100 (default: 20)
 - `cursor`: Pass `next_cursor` from the previous result to get the next pages (default: 0)
+- `max_characters`: Max characters of content per URL (default: 20000). Longer pages are cut and link to their full text.
 
 Large batches return their pages a set at a time. When `has_more` is `true`, call again with `next_cursor` until you have every page.
 
@@ -655,7 +595,7 @@ Large batches return their pages a set at a time. When `has_more` is `true`, cal
 
 - `batch_id`, `status` (`processing` or `completed`), `total_urls`, `completed_urls`, `items` (array of scraped results per URL with `url`, `custom_id`, `markdown_content`, `html_content`, `json_content`, `text_content`, `status`, `page_metadata`)
 
-### 10. Get Crawl Results (`get_crawl_results`)
+### 8. Get Crawl Results (`get_crawl_results`)
 
 Retrieve the status and scraped pages for an async crawl started with `create_crawl`. This is the required companion to `create_crawl` — `create_crawl` only kicks off the job and returns a `crawl_id`; this tool is how you actually fetch the discovered pages and their content.
 
@@ -678,11 +618,16 @@ Retrieve the status and scraped pages for an async crawl started with `create_cr
 - `items_limit`: Max pages to retrieve content for, 1–100 (default: 20)
 - `cursor`: Pagination cursor into the list of discovered pages (default: 0)
 - `search_query`: Optional filter to rank/select pages by relevance to a query
+- `max_characters`: Max characters of content per page (default: 20000). Longer pages are cut and link to their full text.
 
 #### Response includes:
 
 - **While in progress:** `crawl_id`, `status` (`in_progress`), `pages_completed`, `pages_total`, and a `message` prompting you to call again in ~10 seconds.
-- **When completed:** `crawl_id`, `status` (`completed`), `pages_returned`, `next_cursor`, `has_more`, and a `pages` array where each entry has `url`, `custom_id`, and the requested content fields (`markdown_content`, `html_content`, `json_content`, `text_content`).
+- **When completed:** `crawl_id`, `status` (`completed`), `pages_returned`, `next_cursor`, `has_more`, and a `pages` array where each entry has `url`, `title`, `custom_id`, and the requested content fields (`markdown_content`, `html_content`, `json_content`, `text_content`).
+
+### Older tool names
+
+`get_webpage_content` and `get_website_urls` duplicated `scrape_website` and `create_map`. They are no longer listed to clients, so models choose between fewer, clearer tools, but calls to them still work. Use `scrape_website` and `create_map` instead.
 
 ## Error Handling
 

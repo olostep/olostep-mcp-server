@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { Headers } from "node-fetch";
 import fetch from "node-fetch";
+import { DEFAULT_MAX_CHARACTERS, shapePage } from "./pageContent.js";
 
 const OLOSTEP_SCRAPE_API_URL = "https://api.olostep.com/v1/scrapes";
 
 export interface OlostepScrapeResponse {
+	url?: string;
 	result?: {
 		id?: string;
 		url?: string;
@@ -22,7 +24,11 @@ export interface OlostepScrapeResponse {
 export const scrapeWebsite = {
 	name: "scrape_website",
 	description:
-		"Extract content from a single URL. Supports multiple formats and JavaScript rendering.",
+		"Use this when you have a URL and need what is on the page. " +
+		"Returns the page as clean markdown (default), html or text, with its url and title, after rendering JavaScript. " +
+		"For structured fields, set output_format to \"json\" with an llm_extract schema or a parser. " +
+		"Long pages are cut at max_characters (default 20,000) with a link to the full text. " +
+		"For many known URLs use batch_scrape_urls; for many pages of one site use create_crawl.",
 	schema: {
 		url: z.string().url().optional().describe("The URL of the website you want to scrape."),
 		url_to_scrape: z.string().url().optional().describe("Alias for `url`."),
@@ -60,6 +66,12 @@ export const scrapeWebsite = {
 				'the fields you want, e.g. { "type": "object", "properties": { "title": { "type": "string" } } }) ' +
 				'and/or a `prompt`. Required for JSON output unless a `parser` is given.',
 			),
+		max_characters: z
+			.number()
+			.int()
+			.min(500)
+			.default(DEFAULT_MAX_CHARACTERS)
+			.describe(`Max characters of page content to return (default ${DEFAULT_MAX_CHARACTERS}). Longer pages are cut and link to their full text; raise this to read more.`),
 	},
 	handler: async (
 		{
@@ -70,6 +82,7 @@ export const scrapeWebsite = {
 			wait_before_scraping,
 			parser,
 			llm_extract,
+			max_characters,
 		}: {
 			url?: string;
 			url_to_scrape?: string;
@@ -78,6 +91,7 @@ export const scrapeWebsite = {
 			wait_before_scraping?: number;
 			parser?: string;
 			llm_extract?: { schema?: Record<string, unknown>; prompt?: string };
+			max_characters?: number;
 		},
 		apiKey: string,
 		orbitKey?: string,
@@ -147,12 +161,16 @@ export const scrapeWebsite = {
 			}
 
 			const data = (await response.json()) as OlostepScrapeResponse;
-			// Return the full result object so callers can access id/url/status/contents
+			// The result object with the page's url and title first and long content cut.
+			const page = shapePage((data.result ?? {}) as Record<string, unknown>, {
+				url: data.url ?? targetUrl,
+				maxCharacters: max_characters,
+			});
 			return {
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify(data.result ?? {}, null, 2),
+						text: JSON.stringify(page, null, 2),
 					},
 				],
 			};
