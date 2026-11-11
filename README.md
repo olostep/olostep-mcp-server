@@ -457,26 +457,32 @@ The page's `url` and `title` come first. When the content is longer than `max_ch
 
 ### 2. Search the Web (`search_web`)
 
-Search the Web for a given query and get structured results (non-AI, parser-based).
+Search the web for a query and get each result's URL, title and description. Optionally get each result page's content as markdown in the same call.
 
 ```json
 {
   "name": "search_web",
   "arguments": {
     "query": "your search query",
-    "country": "US"
+    "limit": 10,
+    "include_domains": ["docs.olostep.com"],
+    "scrape_results": true
   }
 }
 ```
 
 #### Parameters:
 
-- `query`: Search query (required)
-- `country`: Optional country code for localized results (default: `US`)
+- `query`: Search query in natural language (required)
+- `limit`: Number of results, from 1 to 25 (default: `10`)
+- `include_domains`: Only return results from these domains (optional)
+- `exclude_domains`: Never return results from these domains (optional)
+- `scrape_results`: Also return each result page's content as markdown (default: `false`). Each scraped page uses extra credits.
+- `max_characters`: With `scrape_results`, the maximum characters of content per page (default: `20000`)
 
 #### Response:
 
-- Structured JSON (as text) representing parser-based results
+- JSON (as text) with `query`, `search_id`, `total_results` and `results`: each result has `url`, `title` and `description`, plus `markdown_content` when `scrape_results` is true. Cut pages list the cut fields under `truncated`.
 
 ### 3. Answers (AI) (`answers`)
 

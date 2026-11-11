@@ -173,11 +173,38 @@ async function main() {
   try {
     const r = await call(client, "search_web", {
       query: "Model Context Protocol MCP",
-      country: "US",
+      limit: 5,
     });
     const data = parseToolText(r);
-    const hasOrganic = Array.isArray(data.organic) && data.organic.length > 0;
-    log(!r.isError && hasOrganic ? "PASS" : "FAIL", "search_web", hasOrganic ? `${data.organic.length} results` : "");
+    const ok =
+      Array.isArray(data.results) &&
+      data.results.length > 0 &&
+      data.results.length <= 5 &&
+      data.results.every((x) => x.url && "title" in x && "description" in x);
+    log(!r.isError && ok ? "PASS" : "FAIL", "search_web", ok ? `${data.results.length} results` : JSON.stringify(data).slice(0, 150));
+  } catch (e) {
+    log("FAIL", "search_web", e.message);
+  }
+
+  // 5b. search_web with domain filter + scraped pages, capped per page
+  try {
+    const r = await call(client, "search_web", {
+      query: "batch scraping",
+      limit: 3,
+      include_domains: ["docs.olostep.com"],
+      scrape_results: true,
+      max_characters: 2000,
+    }, 120000);
+    const data = parseToolText(r);
+    const results = Array.isArray(data.results) ? data.results : [];
+    const onDomain = results.length > 0 && results.every((x) => String(x.url).includes("docs.olostep.com"));
+    const capped = results.every((x) => x.markdown_content == null || x.markdown_content.length <= 2000);
+    const hasContent = results.some((x) => typeof x.markdown_content === "string" && x.markdown_content.length > 0);
+    log(
+      !r.isError && onDomain && capped && hasContent ? "PASS" : "FAIL",
+      "search_web (scrape_results)",
+      `${results.length} results, onDomain=${onDomain}, capped=${capped}, content=${hasContent}`,
+    );
   } catch (e) {
     log("FAIL", "search_web", e.message);
   }
