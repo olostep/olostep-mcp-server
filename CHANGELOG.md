@@ -6,6 +6,8 @@ All notable changes to the Olostep MCP Server will be documented in this file.
 
 ## [1.0.21] - 2026-11-11
 
+**Upgrade note:** `search_web` results moved. They used to come back as Google's `organic` list (plus related searches); they now come back under `results`, each with `url`, `title` and `description` (and `markdown_content` when `scrape_results` is true). Code that reads `organic` from `search_web` needs to read `results` instead. The `country` argument is gone; calls that still pass it keep working.
+
 ### Added
 - Server instructions sent on connect: which tool to use for which goal, with the routing rule in the first 512 characters, plus how to follow up on crawl and batch jobs.
 - `max_characters` on `scrape_website`, `get_crawl_results` and `get_batch_results` (default 20,000 per page).
