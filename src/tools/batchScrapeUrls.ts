@@ -3,6 +3,7 @@ import { Headers } from "node-fetch";
 import fetch from "node-fetch";
 import { getBatchResults } from "./getBatchResults.js";
 import { isRunning, unexpectedStatus } from "./jobStatus.js";
+import type { JobWake } from "../wakeshift.js";
 
 const OLOSTEP_API_URL = process.env.OLOSTEP_API_URL ?? "https://api.olostep.com/v1";
 
@@ -89,6 +90,7 @@ export const batchScrapeUrls = {
 		},
 		apiKey: string,
 		orbitKey?: string,
+		job?: JobWake,
 	) => {
 		const rawUrls = urls ?? urls_to_scrape;
 		if (!rawUrls || rawUrls.length === 0) {
@@ -115,6 +117,7 @@ export const batchScrapeUrls = {
 			if (country) payload.country = country;
 			if (orbitKey) payload.force_connection_id = orbitKey;
 			if (parser) payload.parser = { id: parser };
+			if (job) payload.webhook = job.webhook;
 
 			const response = await fetch(`${OLOSTEP_API_URL}/batches`, {
 				method: "POST",

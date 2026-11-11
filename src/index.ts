@@ -19,6 +19,9 @@ import { getBatchResults } from "./tools/getBatchResults.js";
 import { createCrawl } from "./tools/createCrawl.js";
 import { getCrawlResults } from "./tools/getCrawlResults.js";
 import { createMap } from "./tools/createMap.js";
+// Wakeshift is loaded only when WAKESHIFT_KEY is set (startHttp), so without it
+// nothing of it is even imported.
+import type { JobWakes } from "./wakeshift.js";
 
 dotenv.config();
 
@@ -178,14 +181,26 @@ function titleFor(name: string): string {
     return name.split("_").map(w => w === "urls" ? "URLs" : w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
-function createMcpServer(apiKey: string, orbitKey?: string) {
+// Wakeshift (src/wakeshift.ts, docs/wakeshift.md): wakes the agent when its
+// crawl or batch finishes. On only over HTTP with WAKESHIFT_KEY,
+// OLOSTEP_WEBHOOK_SECRET and OLOSTEP_PUBLIC_URL set; `jobs` is undefined otherwise.
+function createMcpServer(apiKey: string, orbitKey?: string, jobs?: JobWakes) {
     const server = new McpServer({ name: "olostep", version: SERVER_VERSION }, { instructions: SERVER_INSTRUCTIONS });
+    // No tools of Wakeshift's own: the tool list stays these.
+    jobs?.attach(server);
 
     for (const tool of tools) {
         const registered = server.registerTool(
             tool.name,
             { title: titleFor(tool.name), description: tool.description, inputSchema: tool.schema, annotations: annotationsFor(tool.name) },
-            async (params: Record<string, unknown>) => wrap(await tool.handler(params, apiKey, orbitKey))
+            jobs?.startsJob(tool.name)
+                ? async (params: Record<string, unknown>) => {
+                      const job = await jobs.start(tool.name, params.wait_for_completion_seconds as number | undefined);
+                      // A confirmed wake replaces the tool's own wait.
+                      const args = job?.wakes ? { ...params, wait_for_completion_seconds: 0 } : params;
+                      return wrap(await tool.handler(args, apiKey, orbitKey, job));
+                  }
+                : async (params: Record<string, unknown>) => wrap(await tool.handler(params, apiKey, orbitKey))
         );
         // The SDK stamps every tool with an experimental `execution: {taskSupport}`
         // field (its async-tasks feature). We don't use tasks, and that extra
@@ -430,6 +445,19 @@ async function startHttp() {
         });
     }
 
+    const wakeshift = process.env.WAKESHIFT_KEY?.trim() ? await import("./wakeshift.js") : undefined;
+    const jobs = wakeshift?.jobWakesFromEnv();
+    const WEBHOOK_PATH = wakeshift?.WEBHOOK_PATH;
+    if (jobs) {
+        // Olostep posts each job's webhook here when the job ends; see docs/wakeshift.md.
+        app.post(`${WEBHOOK_PATH}/:token`, async (req: Request, res: Response) => {
+            const result = await jobs.receive(String(req.params.token), req.body);
+            if (result.body) res.status(result.status).json(result.body);
+            else res.status(result.status).end();
+        });
+        log("info", "Wakeshift on: crawls and batches wake the agent that started them", { path: WEBHOOK_PATH });
+    }
+
     app.post("/mcp", async (req: Request, res: Response) => {
         const start = Date.now();
         const auth = req.headers.authorization;
@@ -452,7 +480,7 @@ async function startHttp() {
         const orbitKey = req.headers["x-orbit-key"] as string | undefined;
 
         try {
-            const server = createMcpServer(apiKey, orbitKey);
+            const server = createMcpServer(apiKey, orbitKey, jobs);
             const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
 
             res.on("close", () => {

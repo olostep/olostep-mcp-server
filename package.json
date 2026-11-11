@@ -17,7 +17,8 @@
     "test:oauth-relay": "node tests/oauth-relay.mjs",
     "test:paging": "node --test tests/paging.test.mjs",
     "test:job-status": "node --test tests/job-status.test.mjs",
-    "test:page-content": "node --test tests/page-content.test.mjs"
+    "test:page-content": "node --test tests/page-content.test.mjs",
+    "test:wakeshift": "node --test tests/wakeshift.test.mjs"
   },
   "files": [
     "build/**/*"
@@ -25,6 +26,7 @@
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
+    "@wakeshift/sdk": "^0.11.1",
     "ajv-formats": "^3.0.1",
     "dotenv": "^16.4.7",
     "express": "^5.2.1",
