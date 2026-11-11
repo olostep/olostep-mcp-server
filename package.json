@@ -1,6 +1,6 @@
 {
   "name": "olostep-mcp",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "Live web search, scraping and crawling API for AI. Get structured, LLM-ready data from any site. Scale to 1M requests with 10 parallel batches at low cost.",
   "type": "module",
   "mcpName": "io.github.olostep/olostep-mcp-server",

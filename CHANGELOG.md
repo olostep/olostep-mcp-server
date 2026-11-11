@@ -4,6 +4,8 @@ All notable changes to the Olostep MCP Server will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.21] - 2026-11-11
+
 ### Added
 - Server instructions sent on connect: which tool to use for which goal, with the routing rule in the first 512 characters, plus how to follow up on crawl and batch jobs.
 - `max_characters` on `scrape_website`, `get_crawl_results` and `get_batch_results` (default 20,000 per page).

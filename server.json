@@ -8,13 +8,13 @@
     "url": "https://github.com/olostep/olostep-mcp-server",
     "source": "github"
   },
-  "version": "1.0.20",
+  "version": "1.0.21",
   "icon": "assets/logo.png",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "olostep-mcp",
-      "version": "1.0.20",
+      "version": "1.0.21",
       "transport": {
         "type": "stdio"
       }
