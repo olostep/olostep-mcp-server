@@ -151,8 +151,10 @@ export const getBatchResults = {
 			const retrieveFormats = (formats && formats.length > 0) ? formats : ["markdown"];
 			const formatsParam = retrieveFormats.map(f => `formats[]=${encodeURIComponent(f)}`).join("&");
 
-			// The API returns a cursor until the listing is exhausted, which can end on an empty page.
-			const hasMore = items.length > 0 && itemsData.cursor !== undefined && itemsData.cursor !== null;
+			// The API returns a cursor whenever a page is full, even if nothing is left, so the listing
+			// can end on an empty page. If the first page already holds every URL, there is nothing more.
+			const firstPageHasAll = !cursor && typeof status.total_urls === "number" && items.length >= status.total_urls;
+			const hasMore = !firstPageHasAll && items.length > 0 && itemsData.cursor !== undefined && itemsData.cursor !== null;
 
 			const results = await Promise.all(
 				items.map(async (item) => {
