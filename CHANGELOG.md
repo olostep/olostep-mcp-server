@@ -8,8 +8,10 @@ All notable changes to the Olostep MCP Server will be documented in this file.
 - Server instructions sent on connect: which tool to use for which goal, with the routing rule in the first 512 characters, plus how to follow up on crawl and batch jobs.
 - `max_characters` on `scrape_website`, `get_crawl_results` and `get_batch_results` (default 20,000 per page).
 - Every scraped page now comes back with its `url` and `title`.
+- `search_web` takes `limit` (1-25), `include_domains`, `exclude_domains`, `scrape_results` and `max_characters`. With `scrape_results`, each result includes its page content as markdown, capped at `max_characters` (default 20,000).
 
 ### Changed
+- `search_web` now uses the Olostep `/v1/searches` endpoint instead of scraping a Google results page. Results are `{ url, title, description }` under `results` (previously Google's `organic` list and related searches). The `country` parameter is removed: `/v1/searches` does not take one, and calls that still pass it keep working.
 - Tool descriptions rewritten as "Use this when..." with when to use a sibling tool instead. `answers` no longer warns about lists; it points list-of-items tasks to `scrape_website`.
 - Page content longer than `max_characters` is cut, and the result lists the cut fields under `truncated` with the full length and a `full_text_url`. Before, a single page could return 70 KB or more.
 - `get_webpage_content` and `get_website_urls`, duplicates of `scrape_website` and `create_map`, are no longer listed in `tools/list`. Calls to them still work.

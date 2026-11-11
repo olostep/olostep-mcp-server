@@ -23,7 +23,7 @@
       "description": "Use this when you have a URL and need what is on the page. Returns the page as clean markdown (default), html or text, with its url and title, after rendering JavaScript. For structured fields, set output_format to \"json\" with an llm_extract schema or a parser. Long pages are cut at max_characters (default 20,000) with a link to the full text. For many known URLs use batch_scrape_urls; for many pages of one site use create_crawl."
     },
     "search_web": {
-      "description": "Use this when you need web pages on a topic and do not have a URL yet. Returns Google results: title, link and snippet for each, plus related searches. It does not read the pages: pass the links you need to scrape_website, or to batch_scrape_urls for many. For a direct factual answer with sources, use answers."
+      "description": "Use this when you need web pages on a topic and do not have a URL yet. Returns up to `limit` results (1-25), each with its URL, title and description. Set scrape_results to true to also get each result page's content as markdown in the same call (each scraped page costs extra credits); otherwise pass the URLs you need to scrape_website, or to batch_scrape_urls for many. Use include_domains to search one site. For a direct factual answer with sources, use answers."
     }
   }
 }
