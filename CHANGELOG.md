@@ -17,6 +17,7 @@ All notable changes to the Olostep MCP Server will be documented in this file.
 
 ### Fixed
 - The server reported version 1.0.0 to clients; it now reports the package version.
+- `get_batch_results` returned `has_more: true` and a `next_cursor` when the first page already held every URL (e.g. any batch of up to 20 URLs read by `batch_scrape_urls`), so agents made one extra empty call.
 
 ## [1.0.20] - 2026-11-08
 

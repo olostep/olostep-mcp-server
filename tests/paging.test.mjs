@@ -81,6 +81,20 @@ test("get_batch_results keeps going after a short page", async () => {
   assert.equal(result.next_cursor, 1);
 });
 
+test("get_batch_results reports no more pages when the first page holds every URL", async () => {
+  const { getBatchResults } = await tools();
+  // A full page (items == limit) still gets a cursor from the real API, e.g. a 1-URL batch read with limit 1.
+  handler = (url) => {
+    if (url.pathname.endsWith("/retrieve")) return { markdown_content: "page" };
+    if (url.pathname.endsWith("/items")) return { items: items(1), cursor: 1794146187360 };
+    return { id: "job_1", status: "completed", total_urls: 1 };
+  };
+  const result = parse(await getBatchResults.handler({ batch_id: "job_1", items_limit: 1 }, "key"));
+  assert.equal(result.items.length, 1);
+  assert.equal(result.has_more, false);
+  assert.equal(result.next_cursor, undefined);
+});
+
 test("get_crawl_results stops reporting more pages on an empty page", async () => {
   const { getCrawlResults } = await tools();
   pagedApi("/pages", "pages", 0);
