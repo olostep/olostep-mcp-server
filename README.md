@@ -440,7 +440,7 @@ Use this when you have a URL and need what is on the page. Returns markdown (def
 
 #### Response (example):
 
-The page's `url` and `title` come first. When the content is longer than `max_characters`, it is cut and `truncated` gives the full length and a `full_text_url`.
+The page's `url` and `title` come first. When the content is longer than `max_characters`, it is cut and `truncated` gives the full length and a `full_text_url`. JSON output is never cut: it is returned whole up to 100,000 characters. Above that, `json_content` is left out and `json_content_omitted` gives its size and a `json_url` to fetch the full JSON.
 
 ```json
 {

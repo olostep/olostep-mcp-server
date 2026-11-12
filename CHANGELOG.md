@@ -4,6 +4,9 @@ All notable changes to the Olostep MCP Server will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- JSON output (`json_content`) is never cut, since cut JSON is invalid. It is returned whole up to 100,000 characters, whatever `max_characters` is. Above that it is left out, and `json_content_omitted` gives the size, a `json_url` to the hosted JSON and a note to fetch it from there.
+
 ## [1.0.21] - 2026-11-11
 
 **Upgrade note:** `search_web` results moved. They used to come back as Google's `organic` list (plus related searches); they now come back under `results`, each with `url`, `title` and `description` (and `markdown_content` when `scrape_results` is true). Code that reads `organic` from `search_web` needs to read `results` instead. The `country` argument is gone; calls that still pass it keep working.

@@ -5,6 +5,13 @@
 /** Default per-page content cap, in characters. */
 export const DEFAULT_MAX_CHARACTERS = 20_000;
 
+/**
+ * JSON is never cut, since cut JSON is invalid and an agent could read a partial
+ * list as the full answer. JSON up to this size is returned whole; above it, the
+ * content is left out and the result points to the hosted JSON instead.
+ */
+export const MAX_JSON_CHARACTERS = 100_000;
+
 const MAX_TITLE_CHARACTERS = 150;
 
 const CONTENT_FIELDS =["markdown_content", "html_content", "text_content"] as const;
@@ -72,6 +79,22 @@ export function shapePage(
 			total_characters: value.length,
 			...(typeof fullTextUrl === "string" && fullTextUrl && { full_text_url: fullTextUrl }),
 		});
+	}
+	const json = page.json_content;
+	if (json !== undefined && json !== null) {
+		const size = typeof json === "string" ? json.length : JSON.stringify(json).length;
+		if (size > MAX_JSON_CHARACTERS) {
+			delete shaped.json_content;
+			const jsonUrl = page.json_hosted_url ?? source.json_hosted_url;
+			const hasUrl = typeof jsonUrl === "string" && jsonUrl.length > 0;
+			shaped.json_content_omitted = {
+				total_characters: size,
+				...(hasUrl && { json_url: jsonUrl }),
+				note: hasUrl
+					? `The JSON is ${size} characters, over the ${MAX_JSON_CHARACTERS}-character limit, so it is not included. Fetch the full JSON from json_url.`
+					: `The JSON is ${size} characters, over the ${MAX_JSON_CHARACTERS}-character limit, so it is not included, and no hosted copy was returned. Narrow the parser or llm_extract schema to get a smaller result.`,
+			};
+		}
 	}
 	if (truncated.length > 0) {
 		shaped.truncated = truncated;
