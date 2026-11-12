@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-const { DEFAULT_MAX_CHARACTERS, pageTitle, shapePage } = await import("../build/tools/pageContent.js");
+const { DEFAULT_MAX_CHARACTERS, MAX_JSON_CHARACTERS, pageTitle, shapePage } = await import("../build/tools/pageContent.js");
 
 test("short pages come back whole, with url and title first", () => {
 	const page = shapePage({ markdown_content: "# Example Domain\n\nBody", custom_id: "a" }, { url: "https://example.com" });
@@ -51,6 +51,24 @@ test("json content is never cut", () => {
 	const page = shapePage({ json_content: json }, { maxCharacters: 10 });
 	assert.equal(page.json_content, json);
 	assert.equal(page.truncated, undefined);
+	assert.equal(page.json_content_omitted, undefined);
+});
+
+test("json content over 100k characters is left out and points to the hosted JSON", () => {
+	const big = JSON.stringify({ items: "z".repeat(MAX_JSON_CHARACTERS) });
+	const page = shapePage({ json_content: big, json_hosted_url: "https://files.example/full.json" });
+	assert.equal(page.json_content, undefined);
+	assert.equal(page.json_content_omitted.total_characters, big.length);
+	assert.equal(page.json_content_omitted.json_url, "https://files.example/full.json");
+	assert.match(page.json_content_omitted.note, /Fetch the full JSON from json_url/);
+	assert.equal(page.truncated, undefined);
+
+	const exactlyAtLimit = "x".repeat(MAX_JSON_CHARACTERS);
+	assert.equal(shapePage({ json_content: exactlyAtLimit }).json_content, exactlyAtLimit);
+
+	const noUrl = shapePage({ json_content: big });
+	assert.equal(noUrl.json_content_omitted.json_url, undefined);
+	assert.match(noUrl.json_content_omitted.note, /no hosted copy/);
 });
 
 test("pageTitle skips blank lines and strips heading and link syntax", () => {
