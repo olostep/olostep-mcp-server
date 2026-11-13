@@ -77,6 +77,21 @@ export const isFinal = (object: string, status: string) => !/\.progress$/.test(o
 
 const jobArgs = z.object({ job: z.string() });
 
+/**
+ * The longest a single tool call can last in each agent program Wakeshift
+ * recognizes, in seconds: a client cuts off a call that waits longer.
+ * Claude Code allows about 60 s per MCP call; Codex 300 s.
+ */
+export const CLIENT_CALL_LIMIT_SECONDS: Record<string, number> = { "claude-code": 60, codex: 300 };
+
+/**
+ * Whether the agent's own wait can't be honored in one call by its client:
+ * a wait longer than the client allows is cut off anyway, so with a
+ * confirmed wake the tool returns at once instead.
+ */
+export const waitOutlastsCall = (waitSeconds: number | undefined, harness: string | null | undefined) =>
+	waitSeconds !== undefined && !!harness && harness in CLIENT_CALL_LIMIT_SECONDS && waitSeconds > CLIENT_CALL_LIMIT_SECONDS[harness];
+
 /** What a job tool gets when Wakeshift is on. */
 export interface JobWake {
 	/** The URL to create the job with, as its `webhook`. */
@@ -179,8 +194,9 @@ export function jobWakes(wake: Wakeshift, secret: string, publicOrigin: string) 
 		const expires = Math.floor(Date.now() / 1000) + JOB_LIFETIME_SECONDS + RETRY_WINDOW_SECONDS;
 		// The webhook goes with the job either way: without a subscription it wakes nobody.
 		const webhook = `${base}${WEBHOOK_PATH}/${token(kind, job, expires)}`;
-		// The agent chose how long to wait: respect it.
-		if (!waitIsOpen(waitSeconds)) return { webhook, wakes: false };
+		// The agent chose how long to wait. Respect it, unless its client can't
+		// hold a call that long (checked once the wake is confirmed, below).
+		const chosen = !waitIsOpen(waitSeconds);
 		let call: ReturnType<typeof wake.currentCall>;
 		try {
 			call = wake.currentCall();
@@ -190,7 +206,7 @@ export function jobWakes(wake: Wakeshift, secret: string, publicOrigin: string) 
 		}
 		try {
 			const sub = await call.subscribe(event, { job }, { once: true, ttl: JOB_LIFETIME_SECONDS });
-			if (wakeConfirmed(sub)) return { webhook, wakes: true };
+			if (wakeConfirmed(sub) && (!chosen || waitOutlastsCall(waitSeconds, "recognized" in sub ? sub.recognized?.harness : null))) return { webhook, wakes: true };
 			// Subscribed, but it won't wake (an MCP Events client's voucher, an
 			// agent Wakeshift didn't recognize): end it, and wait as before.
 			if (sub.state !== "unavailable" && sub.state !== "disabled") await call.unsubscribe(event, { job });

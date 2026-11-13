@@ -277,15 +277,38 @@ test("Wakeshift down: the tool waits as it always has, its result is Olostep's o
   assert.ok(posts[0].webhook, "the webhook still goes with the job, and matches nobody");
 });
 
-test("an explicit wait is respected: the tool waits, and nothing is subscribed", async () => {
+test("an explicit wait the client can hold is respected: the tool waits, and nothing stays subscribed", async () => {
   const { wake, jobs } = await on();
   const client = await connect(jobs);
   jobStatus = "completed";
   const result = await client.callTool({ name: "batch_scrape_urls", arguments: { urls: ["https://a.com"], wait_for_completion_seconds: 30 } });
   assert.match(result.content[0].text, /page/);
   assert.ok(checks.length > 0, "it waited");
-  assert.equal(wake.subscriptions.length, 0);
+  assert.equal(wake.subscriptions.length - wake.unsubscribes.length, 0, "the subscription it made was ended");
   assert.doesNotMatch(JSON.stringify(result), /Wakeshift test client/, "no wake instructions in the result");
+});
+
+test("an explicit wait longer than the client can hold, with the wake confirmed: subscribed, and no wait", async () => {
+  const { wake, jobs } = await on();
+  const client = await connect(jobs);
+  const t0 = Date.now();
+  await client.callTool({ name: "create_crawl", arguments: { ...crawlArgs, wait_for_completion_seconds: 120 } });
+  assert.ok(Date.now() - t0 < 3000, "it didn't wait");
+  assert.equal(checks.length, 0);
+  assert.equal(wake.subscriptions.length - wake.unsubscribes.length, 1, "the subscription stays");
+  const { waitOutlastsCall } = await modules();
+  assert.deepEqual(
+    [[120, "claude-code"], [60, "claude-code"], [30, "claude-code"], [120, "codex"], [400, "codex"], [120, null], [120, "cursor"], [undefined, "claude-code"]].map(([w, h]) => waitOutlastsCall(w, h)),
+    [true, false, false, false, true, false, false, false],
+  );
+});
+
+test("a long explicit wait from an agent Wakeshift can't wake still waits as asked", async () => {
+  const { wake, jobs } = await on();
+  const call = createToolCall({ tool: "create_crawl", native: true, client: wake });
+  const job = await withCall(wake, call, () => jobs.start("create_crawl", 120));
+  assert.equal(job.wakes, false);
+  assert.equal(call.unsubscribes.length, 1);
 });
 
 test("an explicit wait of 0 counts like the default: subscribed, and no wait", async () => {
