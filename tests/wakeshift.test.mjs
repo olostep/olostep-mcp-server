@@ -84,9 +84,25 @@ async function connect(jobs) {
   return client;
 }
 
-async function on() {
+// call.wakes as a newer SDK sets it (wakeshift/wakeshift#1173): @wakeshift/sdk
+// 0.11.1 has no call.wakes, so a test that needs one sets it on the call
+// (undefined leaves it absent, as on 0.11.1).
+function withWakes(call, wakes) {
+  if (wakes !== undefined) Object.defineProperty(call, "wakes", { value: wakes, configurable: true });
+  return call;
+}
+
+// Wakeshift on, with each tool call's call.wakes set to `wakes` (true unless
+// given: the wake is confirmed), except on a stand-in call that set its own.
+async function on(opts = {}) {
+  const wakes = "wakes" in opts ? opts.wakes : true;
   const { jobWakes } = await modules();
   const wake = createTestClient({ app: "Olostep" });
+  const currentCall = wake.currentCall.bind(wake);
+  wake.currentCall = () => {
+    const call = currentCall();
+    return Object.hasOwn(call, "wakes") ? call : withWakes(call, wakes);
+  };
   return { wake, jobs: jobWakes(wake, SECRET, BASE) };
 }
 
@@ -305,10 +321,10 @@ test("an explicit wait longer than the client can hold, with the wake confirmed:
 
 test("a long explicit wait from an agent Wakeshift can't wake still waits as asked", async () => {
   const { wake, jobs } = await on();
-  const call = createToolCall({ tool: "create_crawl", native: true, client: wake });
+  const call = withWakes(createToolCall({ tool: "create_crawl", client: wake }), false);
   const job = await withCall(wake, call, () => jobs.start("create_crawl", 120));
   assert.equal(job.wakes, false);
-  assert.equal(call.unsubscribes.length, 1);
+  assert.equal(call.unsubscribes.length, 0, "the subscription stays while the tool waits");
 });
 
 test("an explicit wait of 0 counts like the default: subscribed, and no wait", async () => {
@@ -323,26 +339,51 @@ test("an explicit wait of 0 counts like the default: subscribed, and no wait", a
   assert.deepEqual([undefined, 0, 45, 1, 60, 120].map(waitIsOpen), [true, true, true, false, false, false]);
 });
 
-test("a subscription that won't wake is ended, and the tool waits as before", async () => {
+test("a wake not confirmed yet: the tool waits as before, and the subscription stays until the wait returns the job's result", async () => {
   const { wake, jobs } = await on();
-  // An MCP Events client (ChatGPT): its subscription wakes only if it takes up the voucher.
-  const call = createToolCall({ tool: "create_crawl", native: true, client: wake });
-  const job = await withCall(wake, call, () => jobs.start("create_crawl", 45));
-  assert.equal(job.wakes, false);
+  // Claude Code without Wakeshift's plugin, the first time: subscribed and
+  // recognized, but nothing listens until the user answers (wakeshift/wakeshift#1338).
+  const call = withWakes(createToolCall({ tool: "create_crawl", client: wake }), false);
+  const job = await withCall(wake, call, () => jobs.start("create_crawl", undefined));
+  assert.equal(job.wakes, false, "the tool keeps its own wait");
   assert.ok(job.webhook);
   assert.equal(call.subscriptions.length, 1);
-  assert.equal(call.unsubscribes.length, 1);
+  assert.equal(call.unsubscribes.length, 0, "kept: a listener started after the result still gets the job's end");
+  await withCall(wake, call, () => job.done());
+  await withCall(wake, call, () => job.done());
+  assert.equal(call.unsubscribes.length, 1, "the wait returned the result: ended, once");
 });
 
-test("a wake is confirmed only for a conversation subscription of an agent Wakeshift recognized", async () => {
+test("an SDK without call.wakes (0.11.1): the tool waits as before, and a result returned in the call ends the subscription", async () => {
+  const { wake, jobs } = await on({ wakes: undefined });
+  const client = await connect(jobs);
+  jobStatus = "completed";
+  const result = await client.callTool({ name: "create_crawl", arguments: crawlArgs });
+  assert.notEqual(result.isError, true);
+  assert.match(result.content[0].text, /page/, "Olostep's own wait returned the pages");
+  assert.ok(checks.length > 0, "it waited");
+  assert.equal(wake.subscriptions.length, 1);
+  assert.equal(wake.subscriptions.length - wake.unsubscribes.length, 0, "the pages are in the result, so nothing stays subscribed");
+});
+
+test("not confirmed, and the batch finishes in the wait: its results come back, and nothing stays subscribed", async () => {
+  const { wake, jobs } = await on({ wakes: false });
+  const client = await connect(jobs);
+  jobStatus = "completed";
+  const result = await client.callTool({ name: "batch_scrape_urls", arguments: { urls: ["https://a.com"] } });
+  assert.match(result.content[0].text, /page/);
+  assert.ok(checks.length > 0, "it waited");
+  assert.equal(wake.subscriptions.length - wake.unsubscribes.length, 0);
+});
+
+test("a wake is confirmed only when the SDK's call.wakes is true", async () => {
   const { wakeConfirmed } = await modules();
-  const cc = { harness: "claude-code", via: "client", claimed: null };
-  assert.equal(wakeConfirmed({ state: "created", recognized: cc }), true);
-  assert.equal(wakeConfirmed({ state: "renewed", recognized: cc }), true);
-  assert.equal(wakeConfirmed({ state: "created", recognized: { harness: null, via: null, claimed: null } }), false);
-  assert.equal(wakeConfirmed({ state: "native", recognized: cc }), false);
-  assert.equal(wakeConfirmed({ state: "unavailable" }), false);
-  assert.equal(wakeConfirmed({ state: "disabled" }), false);
+  assert.equal(wakeConfirmed({ wakes: true }), true);
+  assert.equal(wakeConfirmed({ wakes: false }), false);
+  assert.equal(wakeConfirmed({}), false, "an SDK without call.wakes: wait as before");
+  assert.equal(wakeConfirmed({ wakes: "true" }), false);
+  // What decided it before (subscribed, and a recognized program) no longer does.
+  assert.equal(wakeConfirmed({ state: "created", recognized: { harness: "claude-code", via: "client", claimed: null } }), false);
 });
 
 test("tools/list: only the two job tools change, and Wakeshift adds no tools", async () => {

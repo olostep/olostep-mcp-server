@@ -132,7 +132,11 @@ export const createCrawl = {
 					if ("isError" in res && res.isError) return res;
 					let status = "";
 					try { status = String(JSON.parse(res.content[0].text).status ?? ""); } catch { /* keep polling */ }
-					if (status === "completed") return res;
+					if (status === "completed") {
+						// The pages are in this result: no wake needed for them.
+						await job?.done();
+						return res;
+					}
 				}
 				return {
 					content: [{

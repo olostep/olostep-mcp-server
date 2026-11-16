@@ -170,10 +170,13 @@ export const batchScrapeUrls = {
 					if (status === "completed") {
 						// Hand back the content directly instead of asking for a second call.
 						const totalUrls = Number(statusData.total_urls ?? 20) || 20;
-						return await getBatchResults.handler(
+						const results = await getBatchResults.handler(
 							{ batch_id: batchId, formats: [output_format], items_limit: Math.min(totalUrls, 20) },
 							apiKey,
 						);
+						// The results are in this result: no wake needed for them.
+						if (!("isError" in results && results.isError)) await job?.done();
+						return results;
 					}
 					if (!isRunning(status)) return unexpectedStatus("batch", statusData);
 				}

@@ -13,7 +13,8 @@
 // returns at once instead of waiting. Olostep's backend posts its
 // crawl.completed or batch.completed event when the job ends, and this server
 // emits it to Wakeshift, which wakes the conversation. Otherwise the tool waits
-// exactly as without Wakeshift, and the webhook matches nobody. This server
+// exactly as without Wakeshift, keeping the subscription unless the wait
+// returns the job's result (see start). This server
 // never checks a job's status for Wakeshift: the webhook is the only signal.
 //
 // Olostep's webhooks aren't signed, so the token in the path is the check: an
@@ -97,22 +98,34 @@ export interface JobWake {
 	/** The URL to create the job with, as its `webhook`. */
 	readonly webhook: string;
 	/**
-	 * The conversation is subscribed to the job's end and Wakeshift can wake
-	 * it: the tool doesn't wait (wait_for_completion_seconds 0). Otherwise the
-	 * tool waits as it always has, and nothing is subscribed.
+	 * Wakeshift wakes the conversation when the job ends: the tool doesn't
+	 * wait (wait_for_completion_seconds 0). Otherwise the tool waits as it
+	 * always has.
 	 */
 	readonly wakes: boolean;
+	/**
+	 * The tool's own wait returned the job's result in the call: ends the
+	 * subscription kept while it waited, so the agent isn't woken later for
+	 * a result it already has. Call it before the handler returns. Does
+	 * nothing when Wakeshift replaced the wait or nothing was subscribed;
+	 * never throws.
+	 */
+	readonly done: () => Promise<void>;
 }
 
+const nothing = async () => {};
+
 /**
- * Whether a subscription will wake its conversation, from what the SDK says
- * today: a conversation subscription (created or renewed) for an agent
- * program Wakeshift recognized. Not: an MCP Events client's (native: it wakes
- * only if the client takes up the voucher), "unavailable", or an agent
- * Wakeshift didn't recognize.
+ * Whether Wakeshift wakes the calling conversation, read after
+ * call.subscribe: the SDK's call.wakes (wakeshift/wakeshift#1173). It's true
+ * only once a wake is confirmed: not while the user's choice of how to be
+ * notified is pending (a Claude Code without Wakeshift's plugin, the first
+ * time), nor for an agent Wakeshift can't wake now. An SDK without it
+ * (0.11.1 and earlier) reads as false, so the tool waits as without
+ * Wakeshift.
  */
-export function wakeConfirmed(sub: { state: string; recognized?: { harness: string | null } | null }): boolean {
-	return (sub.state === "created" || sub.state === "renewed") && !!sub.recognized?.harness;
+export function wakeConfirmed(call: object): boolean {
+	return (call as { wakes?: unknown }).wakes === true;
 }
 
 const crawlPayload = z.object({
@@ -179,12 +192,16 @@ export function jobWakes(wake: Wakeshift, secret: string, publicOrigin: string) 
 	/**
 	 * For a call of a job tool: the webhook to create the job with, and
 	 * whether Wakeshift replaces the tool's own wait. It does only when the
-	 * agent left the wait at its default or 0 and the conversation's wake is
-	 * confirmed (wakeConfirmed); then the conversation is subscribed to the
-	 * job's end. Otherwise nothing is subscribed (one that won't wake is
-	 * ended again) and the tool behaves exactly as without Wakeshift.
-	 * Undefined when Wakeshift is off or the tool doesn't start a job. It
-	 * never throws, so Wakeshift never changes a tool's result.
+	 * agent left the wait at its default or 0 (or asked for one longer than
+	 * its client holds a call) and the conversation's wake is confirmed
+	 * (wakeConfirmed). Otherwise the tool waits exactly as without Wakeshift,
+	 * and the subscription stays while it waits: the result carries what the
+	 * agent needs to be woken (Claude Code's question to the user), and a
+	 * listener started after it (once the user installs Wakeshift's plugin)
+	 * still gets the job's end. If the wait returns the job's result, the tool
+	 * ends the subscription (done). Undefined when Wakeshift is off or the
+	 * tool doesn't start a job. It never throws, so Wakeshift never changes a
+	 * tool's result.
 	 */
 	async function start(tool: string, waitSeconds: number | undefined): Promise<JobWake | undefined> {
 		const kind = kindOf[tool];
@@ -202,19 +219,33 @@ export function jobWakes(wake: Wakeshift, secret: string, publicOrigin: string) 
 			call = wake.currentCall();
 		} catch (err) {
 			if (!isWakeshiftError(err, "no_call")) warn("couldn't find the tool call", err);
-			return { webhook, wakes: false };
+			return { webhook, wakes: false, done: nothing };
 		}
+		let sub: Awaited<ReturnType<typeof call.subscribe>>;
 		try {
-			const sub = await call.subscribe(event, { job }, { once: true, ttl: JOB_LIFETIME_SECONDS });
-			if (wakeConfirmed(sub) && (!chosen || waitOutlastsCall(waitSeconds, "recognized" in sub ? sub.recognized?.harness : null))) return { webhook, wakes: true };
-			// Subscribed, but it won't wake (an MCP Events client's voucher, an
-			// agent Wakeshift didn't recognize): end it, and wait as before.
-			if (sub.state !== "unavailable" && sub.state !== "disabled") await call.unsubscribe(event, { job });
+			sub = await call.subscribe(event, { job }, { once: true, ttl: JOB_LIFETIME_SECONDS });
 		} catch (err) {
 			// Wakeshift down or refusing: wait as before.
 			warn("couldn't subscribe the conversation to its job", err);
+			return { webhook, wakes: false, done: nothing };
 		}
-		return { webhook, wakes: false };
+		if (wakeConfirmed(call) && (!chosen || waitOutlastsCall(waitSeconds, "recognized" in sub ? sub.recognized?.harness : null))) {
+			return { webhook, wakes: true, done: nothing };
+		}
+		if (sub.state === "unavailable" || sub.state === "disabled") return { webhook, wakes: false, done: nothing };
+		// Not confirmed (yet), or the agent chose a wait its client holds: the
+		// tool waits as before, and the subscription stays meanwhile.
+		let ended = false;
+		const done = async () => {
+			if (ended) return;
+			ended = true;
+			try {
+				await call.unsubscribe(event, { job });
+			} catch (err) {
+				warn("couldn't end the subscription to a job whose result the tool returned", err);
+			}
+		};
+		return { webhook, wakes: false, done };
 	}
 
 	/**

@@ -138,11 +138,13 @@ Olostep's docs list signed webhooks as coming soon. When they ship, the route sh
 3. Olostep's backend posts the job's end. The route checks the token and the body, and emits the event to the job's UUID with `id` set from the delivery's `id`.
 4. Wakeshift wakes the conversation, which reads the line and fetches the results with `get_crawl_results` or `get_batch_results`. Delivering it ends the subscription.
 
-**Otherwise the tool behaves exactly as without Wakeshift:** it waits up to `wait_for_completion_seconds` as it always has, returns the results if the job finishes in that time, and nothing is subscribed. That's the case when:
+**Otherwise the tool behaves exactly as without Wakeshift:** it waits up to `wait_for_completion_seconds` as it always has, and returns the results if the job finishes in that time. That's the case when:
 
 - the agent chose its own wait (any value but the default 45 or 0; an explicit 45 can't be told from the default, so it counts as the default, and 0 asks for no wait, so a wake replaces nothing);
 - Wakeshift can't be reached, or refuses the subscribe;
-- Wakeshift can't wake the conversation. Today that's decided from what Wakeshift's SDK reports on the subscribe: a conversation subscription for an agent program it recognized counts as a wake. An MCP Events client's subscription (ChatGPT's), which wakes only if the client takes up the voucher, doesn't, and neither does an agent it didn't recognize. A subscription made that won't wake is ended again before the tool waits.
+- Wakeshift doesn't wake the conversation yet. That's the SDK's `call.wakes` after the subscribe: true only once a wake is confirmed. It's false while the user hasn't yet chosen how to be notified (Claude Code without Wakeshift's plugin, the first time it watches something: the result asks them), and for an agent Wakeshift can't wake now. `@wakeshift/sdk` 0.11.1 has no `call.wakes`, so on it the tool always waits.
+
+When the tool waits, the subscription stays while it does, except after a failed subscribe. If the job finishes within the wait, the tool returns its results and ends the subscription, so the agent isn't woken later for results it already has. If the wait runs out first, the subscription stays: the result carries what the agent needs to be woken (Claude Code's question to the user), and a listener the user starts afterwards (Wakeshift's plugin, once installed) still gets the job's end.
 
 The job gets its `webhook` in every case; when nothing is subscribed, the route still emits, and no conversation is woken.
 
