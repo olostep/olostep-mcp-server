@@ -19,7 +19,7 @@ import { getBatchResults } from "./tools/getBatchResults.js";
 import { createCrawl } from "./tools/createCrawl.js";
 import { getCrawlResults } from "./tools/getCrawlResults.js";
 import { createMap } from "./tools/createMap.js";
-// Wakeshift is loaded only when WAKESHIFT_KEY is set (startHttp), so without it
+// Wakeshift is loaded only when WAKESHIFT_KEY is set (loadJobWakes), so without it
 // nothing of it is even imported.
 import type { JobWakes } from "./wakeshift.js";
 
@@ -250,6 +250,32 @@ async function startStdio() {
     log("info", "MCP server started in STDIO mode");
 }
 
+// Loads Wakeshift (src/wakeshift.ts) only when WAKESHIFT_KEY is set. When the
+// key is set but can't be used, the server stops here and says why: a startup
+// error is otherwise silent (the catch at the bottom of this file), and wakes
+// someone turned on shouldn't be quietly off.
+async function loadJobWakes(): Promise<{ jobs?: JobWakes; WEBHOOK_PATH?: string }> {
+    if (!process.env.WAKESHIFT_KEY?.trim()) return {};
+    const kind = (err: unknown) => ({ error: err instanceof Error ? err.name : typeof err });
+    let wakeshift: typeof import("./wakeshift.js");
+    try {
+        wakeshift = await import("./wakeshift.js");
+    } catch (err) {
+        const missing = (err as { code?: string } | null)?.code === "ERR_MODULE_NOT_FOUND";
+        log("error", missing
+            ? "WAKESHIFT_KEY is set but @wakeshift/sdk isn't installed. Install the version package.json names (npm install @wakeshift/sdk@<version>), or unset WAKESHIFT_KEY."
+            : "WAKESHIFT_KEY is set but Wakeshift couldn't be loaded. Unset WAKESHIFT_KEY to start without it.", kind(err));
+        throw err;
+    }
+    try {
+        return { jobs: wakeshift.jobWakesFromEnv(), WEBHOOK_PATH: wakeshift.WEBHOOK_PATH };
+    } catch (err) {
+        // Only the kind of error: never the key.
+        log("error", "WAKESHIFT_KEY isn't a Wakeshift app key. Copy it again from Wakeshift's console, or unset WAKESHIFT_KEY to start without it.", kind(err));
+        throw err;
+    }
+}
+
 async function startHttp() {
     const port = parseInt(process.env.PORT ?? "3000", 10);
     const app = express();
@@ -445,9 +471,7 @@ async function startHttp() {
         });
     }
 
-    const wakeshift = process.env.WAKESHIFT_KEY?.trim() ? await import("./wakeshift.js") : undefined;
-    const jobs = wakeshift?.jobWakesFromEnv();
-    const WEBHOOK_PATH = wakeshift?.WEBHOOK_PATH;
+    const { jobs, WEBHOOK_PATH } = await loadJobWakes();
     if (jobs) {
         // Olostep posts each job's webhook here when the job ends; see docs/wakeshift.md.
         app.post(`${WEBHOOK_PATH}/:token`, async (req: Request, res: Response) => {

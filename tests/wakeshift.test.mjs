@@ -355,4 +355,14 @@ test("tools/list: only the two job tools change, and Wakeshift adds no tools", a
   assert.ok(crawl.description.startsWith(createCrawl.description), "Olostep's description comes first, unchanged");
   assert.ok(crawl.description.length < 2048, `${crawl.description.length} characters`);
   assert.equal(tools.find((t) => t.name === "plain_tool").description, "Does nothing.");
+  // What docs/wakeshift.md says the job tools gain: three optional arguments, and nothing else.
+  const off = (await (await connect(undefined)).listTools()).tools;
+  for (const name of ["create_crawl", "batch_scrape_urls"]) {
+    const props = (list) => Object.keys(list.find((t) => t.name === name).inputSchema.properties).sort();
+    const added = props(tools).filter((p) => !props(off).includes(p));
+    assert.deepEqual(added, ["conversation_id", "harness", "session_key"], name);
+    const required = (list) => list.find((t) => t.name === name).inputSchema.required ?? [];
+    assert.deepEqual(required(tools), required(off), `${name}: nothing new is required`);
+  }
+  assert.deepEqual(tools.find((t) => t.name === "plain_tool").inputSchema, off.find((t) => t.name === "plain_tool").inputSchema);
 });

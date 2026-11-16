@@ -8,19 +8,37 @@ This server never checks a job's status to find that out. **The only signal is t
 
 ## Turning it on
 
-On the hosted server (the HTTP transport), set:
+Three steps, on the hosted server (the HTTP transport):
 
-| Variable | What it is |
-| --- | --- |
-| `WAKESHIFT_KEY` | The key of a Wakeshift app made for this server, from Wakeshift's console. |
-| `OLOSTEP_WEBHOOK_SECRET` | A random secret of at least 32 characters, used only by this server to sign each job's webhook URL. `openssl rand -hex 32` makes one. Every instance needs the same value. |
-| `OLOSTEP_PUBLIC_URL` | This server's public URL, such as `https://mcp.olostep.com`: job webhooks go to its origin. Optional when `MCP_OAUTH_RESOURCE_URL` is set, as on the hosted server; its origin is used then. Never taken from a request's headers, which a caller controls. |
+1. **Create a Wakeshift app for this server** in [Wakeshift's console](https://app.wakeshift.ai): sign in and choose **New app**. It shows the app's key once.
+2. **Give the server two secrets:**
 
-Olostep's backend must be able to reach that origin.
+   | Variable | What it is |
+   | --- | --- |
+   | `WAKESHIFT_KEY` | The key of the Wakeshift app. |
+   | `OLOSTEP_WEBHOOK_SECRET` | A random secret of at least 32 characters, used only by this server to sign each job's webhook URL. `openssl rand -hex 32` makes one. Every instance needs the same value. |
+   | `OLOSTEP_PUBLIC_URL` | This server's public URL, such as `https://mcp.olostep.com`: job webhooks go to its origin. Not needed when `MCP_OAUTH_RESOURCE_URL` is set, as on the hosted server; its origin is used then. Never taken from a request's headers, which a caller controls. |
 
-Turning it on needs Node.js 20.19 or later (or 22.12 or later), which Wakeshift's SDK requires; the Docker images' `node:20-alpine` is. Without `WAKESHIFT_KEY` the SDK isn't loaded at all, so the server runs on the Node versions it supports today.
+   `deploy/task-definition.json` is in this public repository, so give the first two to the ECS task as `secrets` (from Secrets Manager or Parameter Store), not as `environment` values.
+3. **Deploy, and check it.** At startup the server logs `Wakeshift on: crawls and batches wake the agent that started them`. Then, from Claude Code connected to the server, ask: "Crawl 200 pages of https://docs.olostep.com and tell me when it's done." `create_crawl` returns the crawl's ID at once, and the agent is woken when the crawl ends.
+
+Olostep's backend must be able to reach the server's public origin.
+
+**A setting that can't work stops the server at startup, with the reason in the log.** That's the case when `WAKESHIFT_KEY` isn't a Wakeshift app key, or `@wakeshift/sdk` isn't installed. With the key and no secret (or no public URL), the server starts, logs that job wakes are off, and runs as without Wakeshift. To turn it off again, unset `WAKESHIFT_KEY`.
+
+`@wakeshift/sdk` is an optional dependency, pinned to an exact version. `npm ci` installs it, as does the hosted image's `npm ci --omit=dev`, and it is loaded only when `WAKESHIFT_KEY` is set. It needs Node.js 20.19 or later (or 22.12 or later), which the Docker images' `node:20-alpine` is. Without the key, the server runs on the Node versions it supports today.
 
 The stdio transport doesn't offer it: Olostep's backend can't reach a process on someone's computer.
+
+## What Wakeshift receives, and what changes for agents
+
+Read from `@wakeshift/sdk` 0.11.1, the exact version `package.json` pins.
+
+- **Each call of `create_crawl` or `batch_scrape_urls`** sends Wakeshift a subscribe request: the event's name, a UUID this server makes for the job (not Olostep's ID), the tool's name, the client's name and `User-Agent`, the request's `_meta` as the client sent it, and Wakeshift's own three arguments when the agent passed them (below). When that subscription won't wake the conversation, a second request ends it.
+- **Each job's final webhook** is passed on, whether or not a conversation is subscribed: that UUID, Olostep's `crawl_id` or `batch_id`, the final status and the counts.
+- **Never sent:** the Olostep API key or OAuth token, the URLs to crawl or scrape, any other tool argument, page content, or a tool's result.
+- **The tool list is the same.** No tool is added. The two job tools gain a passage in their description and three optional arguments: `session_key`, `harness` and `conversation_id`. No other tool changes.
+- **After a call that subscribes, text written by the Wakeshift service is added to the tool's result.** It tells the agent how it will hear of the job's end, and can ask it to start a background listener or to offer the person a one-time install of Wakeshift's plugin. So setting `WAKESHIFT_KEY` trusts that service with a few lines of what agents are told.
 
 ## What the backend sends
 

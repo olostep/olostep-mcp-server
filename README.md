@@ -644,7 +644,9 @@ It's off unless the hosted (HTTP) server has `WAKESHIFT_KEY`, the key of a Wakes
 
 With them, each crawl or batch is created with a `webhook` pointing back at this server. When Wakeshift can wake the agent's conversation and the agent left `wait_for_completion_seconds` at its default (or set it to 0), the tool returns the job's ID at once instead of waiting, and Olostep's `crawl.completed` or `batch.completed` delivery wakes the conversation when the job ends; the agent then reads the results with `get_crawl_results` or `get_batch_results`. The server never checks a job's status for this: the webhook is the only signal. Otherwise (an agent Wakeshift can't wake, an explicit wait, or Wakeshift unreachable) the tool waits and answers exactly as without Wakeshift.
 
-[docs/wakeshift.md](docs/wakeshift.md) describes the webhook, how its URL is checked, and what the server does with it.
+When it's on, Wakeshift receives each job's ID, final status and counts, and the name of the tool and client that started it. It never receives an Olostep key, a URL to crawl or scrape, page content or a tool's result. The tool list stays the same; the two job tools gain three optional arguments, and Wakeshift adds a few lines to their results. [What Wakeshift receives](docs/wakeshift.md#what-wakeshift-receives-and-what-changes-for-agents) has the whole list.
+
+[docs/wakeshift.md](docs/wakeshift.md) has the three steps to turn it on, and describes the webhook, how its URL is checked, and what the server does with it.
 
 ## Error Handling
 
