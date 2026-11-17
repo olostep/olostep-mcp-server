@@ -4,6 +4,9 @@ All notable changes to the Olostep MCP Server will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Optional Wakeshift support: with `WAKESHIFT_KEY`, `OLOSTEP_WEBHOOK_SECRET` and a public URL set on the HTTP server, the agent that started a crawl or batch with `create_crawl` or `batch_scrape_urls` is woken when it finishes, by the job's completion webhook (`POST /webhooks/olostep/<token>`; docs/wakeshift.md). Without them nothing changes.
+
 ### Changed
 - JSON output (`json_content`) is never cut, since cut JSON is invalid. It is returned whole up to 100,000 characters, whatever `max_characters` is. Above that it is left out, and `json_content_omitted` gives the size, a `json_url` to the hosted JSON and a note to fetch it from there.
 
