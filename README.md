@@ -383,7 +383,7 @@ The Olostep tools will then be available in your Metorial AI chats.
 
 ### Other clients
 
-Setup for Gemini CLI, Codex, Goose, opencode, Kiro, Roo Code, Warp, LM Studio, the GitHub Copilot coding agent and more is in the [MCP clients guide](https://docs.olostep.com/integrations/mcp-clients).
+Setup for Codex, Goose, opencode, Kiro, Roo Code, Warp, LM Studio, the GitHub Copilot coding agent and more is in the [MCP clients guide](https://docs.olostep.com/integrations/mcp-clients).
 
 ## Configuration
 
