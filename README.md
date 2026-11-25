@@ -22,7 +22,7 @@ From extracting data from a handful of URLs to crawling hundreds of millions of 
 ## Features
 
 - Scrape website content in HTML, Markdown, JSON or Plain Text (with optional parsers)
-- Parser-based web search with structured results
+- Web search with each result's title, URL and description, and optionally its page content
 - AI Answers with citations and optional JSON-shaped outputs
 - Batch scraping of up to 100k URLs
 - Autonomous site crawling from a start URL
@@ -203,48 +203,26 @@ Add this to your `claude_desktop_config.json`:
 }
 ```
 
-Or install via the Smithery CLI in your device terminal:
-
-```bash
-npx -y @smithery/cli install @olostep/olostep-mcp-server --client claude
-```
-
 ### Claude Code
 
-Add the remote endpoint to your Claude Code MCP configuration:
+Add the remote endpoint with your API key:
 
-```json
-{
-  "mcpServers": {
-    "olostep": {
-      "url": "https://mcp.olostep.com/mcp",
-      "headers": {
-        "Authorization": "Bearer YOUR_API_KEY_HERE"
-      }
-    }
-  }
-}
+```bash
+claude mcp add --transport http olostep https://mcp.olostep.com/mcp \
+  --header "Authorization: Bearer YOUR_API_KEY_HERE"
 ```
+
+Leave out `--header` to sign in with your Olostep account (OAuth) instead.
 
 **Alternative (local):**
 
-```json
-{
-  "mcpServers": {
-    "olostep": {
-      "command": "npx",
-      "args": ["-y", "olostep-mcp"],
-      "env": {
-        "OLOSTEP_API_KEY": "YOUR_API_KEY_HERE"
-      }
-    }
-  }
-}
+```bash
+claude mcp add olostep -e OLOSTEP_API_KEY=YOUR_API_KEY_HERE -- npx -y olostep-mcp
 ```
 
 ### Windsurf
 
-Add this to your `./codeium/windsurf/model_config.json`:
+Add this to your `~/.codeium/windsurf/mcp_config.json`:
 
 ```json
 {
@@ -402,6 +380,10 @@ Add this to your Metorial MCP server configuration:
 ```
 
 The Olostep tools will then be available in your Metorial AI chats.
+
+### Other clients
+
+Setup for Codex, Goose, opencode, Kiro, Roo Code, Warp, LM Studio, the GitHub Copilot coding agent and more is in the [MCP clients guide](https://docs.olostep.com/integrations/mcp-clients).
 
 ## Configuration
 
